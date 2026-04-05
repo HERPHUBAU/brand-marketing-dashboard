@@ -1,3 +1,4 @@
+import './index.css';
 import React, { useState, useEffect, useMemo } from 'react';
 import { 
   LayoutDashboard, Megaphone, BarChart3, Users, Calendar, Search, 
@@ -154,7 +155,14 @@ const OverviewPage = ({ data, loading }) => (
             <XAxis dataKey="date" stroke="#D2B48C" fontSize={10} axisLine={false} tickLine={false} />
             <YAxis yAxisId="left" stroke="#D2B48C" fontSize={10} axisLine={false} tickLine={false} />
             <YAxis yAxisId="right" orientation="right" stroke="#A84323" fontSize={10} axisLine={false} tickLine={false} />
-            <Tooltip contentStyle={{ backgroundColor: '#1A1817', border: '1px solid #45413E', borderRadius: '0px' }} />
+            <Tooltip 
+              contentStyle={{ 
+                backgroundColor: '#33302E', 
+                border: '1px solid #444',
+                borderRadius: '8px' 
+              }}
+              formatter={(value) => [value.toFixed(2), ""]}
+            />          
             <Area yAxisId="left" type="monotone" dataKey="spend" stroke="#D8D3CC" strokeWidth={2} fill="transparent" />
             <Area yAxisId="right" type="monotone" dataKey="roas" stroke="#A84323" strokeWidth={3} fill="url(#ochreGrad)" />
           </AreaChart>

@@ -1,3 +1,5 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@theme {
+  --color-brand-ochre: #a84323;
+  --color-brand-charcoal: #33302E;
+}
