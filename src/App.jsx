@@ -620,6 +620,9 @@ const App = () => {
     const totalImps = realStats.reduce((acc, curr) => acc + curr.impressions, 0);
     const totalClicks = realStats.reduce((acc, curr) => acc + curr.clicks, 0);
     const totalConversions = realStats.reduce((acc, curr) => acc + curr.conversions, 0);
+    const totalLeads = realStats.reduce((acc, curr) => acc + (curr.leads || 0), 0);
+    const totalFormSubmissions = realStats.reduce((acc, curr) => acc + (curr.form_submissions || 0), 0);
+    const totalPurchases = realStats.reduce((acc, curr) => acc + (curr.purchases || 0), 0);
     const totalRevenue = realStats.reduce((acc, curr) => acc + curr.revenue, 0);
     const avgRoas = realStats.length > 0 
       ? (realStats.reduce((acc, curr) => acc + curr.roas, 0) / realStats.length).toFixed(2) 
@@ -635,8 +638,8 @@ const App = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <StatCard label="Total Spend" value={formatCurrency(totalSpend)} trend="META API" up={totalSpend > 0} />
               <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} trend={`${avgRoas}x`} up={parseFloat(avgRoas) > 0} />
-              <StatCard label="Blended ROAS" value={`${avgRoas}x`} trend="AVG" up={parseFloat(avgRoas) > 2} />
-              <StatCard label="Total Impressions" value={formatNumber(totalImps)} trend="REACH" up={totalImps > 0} />
+              <StatCard label="Total Leads" value={formatNumber(totalLeads)} trend="LEADS" up={totalLeads > 0} />
+              <StatCard label="Total Conversions" value={formatNumber(totalConversions)} trend="CONV" up={totalConversions > 0} />
             </div>
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -657,25 +660,32 @@ const App = () => {
               </div>
               
               <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
-                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Performance Metrics</h3>
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Marketing Actions</h3>
                  <ResponsiveContainer width="100%" height={350}>
                     <BarChart data={[
-                      { metric: 'CTR', value: parseFloat(avgCTR), max: 5 },
-                      { metric: 'CPC', value: parseFloat(avgCPC), max: 5 },
-                      { metric: 'Conv. Rate', value: parseFloat(conversionRate), max: 5 },
-                      { metric: 'ROAS', value: parseFloat(avgRoas), max: 10 }
+                      { metric: 'Leads', value: totalLeads, max: Math.max(totalLeads * 1.5, 10) },
+                      { metric: 'Form Submits', value: totalFormSubmissions, max: Math.max(totalFormSubmissions * 1.5, 10) },
+                      { metric: 'Purchases', value: totalPurchases, max: Math.max(totalPurchases * 1.5, 10) },
+                      { metric: 'Conversions', value: totalConversions, max: Math.max(totalConversions * 1.5, 10) }
                     ]}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#45413E" vertical={false} />
                       <XAxis dataKey="metric" tick={{ fill: '#D2B48C', fontSize: 10 }} />
                       <YAxis hide />
                       <Tooltip 
                         contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} 
-                        formatter={(val) => [val.toFixed(2), 'Value']}
+                        formatter={(val) => [val.toFixed(0), 'Count']}
                       />
                       <Bar dataKey="value" fill="#A84323" radius={[4, 4, 0, 0]} />
                     </BarChart>
                  </ResponsiveContainer>
               </div>
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <StatCard label="Form Submissions" value={formatNumber(totalFormSubmissions)} trend="FORMS" up={totalFormSubmissions > 0} />
+              <StatCard label="Purchases" value={formatNumber(totalPurchases)} trend="SALES" up={totalPurchases > 0} />
+              <StatCard label="Blended ROAS" value={`${avgRoas}x`} trend="AVG" up={parseFloat(avgRoas) > 2} />
+              <StatCard label="Total Impressions" value={formatNumber(totalImps)} trend="REACH" up={totalImps > 0} />
             </div>
             
             {benchmarkData && (

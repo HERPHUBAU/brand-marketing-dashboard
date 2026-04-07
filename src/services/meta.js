@@ -191,17 +191,23 @@ class MetaService {
         status: "Success",
         connected_as: data.data[0].name,
         is_fallback: false, // Always false since we don't use fallback anymore
-        meta_data: insights.length === 0 ? [] : insights.map(item => ({
-          date: dateRange,
-          spend: item.spend || 0,
-          impressions: item.impressions || 0,
-          clicks: item.clicks || 0,
-          conversions: this.getConversions(item.actions),
-          revenue: this.getRevenue(item.actions),
-          ctr: item.clicks && item.impressions ? ((item.clicks / item.impressions) * 100).toFixed(3) : 0,
-          cpc: item.clicks && item.spend ? (item.spend / item.clicks).toFixed(2) : 0,
-          roas: this.getRevenue(item.actions) && item.spend ? (this.getRevenue(item.actions) / item.spend).toFixed(2) : 0
-        }))
+        meta_data: insights.length === 0 ? [] : insights.map(item => {
+          const actions = this.getAllActions(item.actions);
+          return {
+            date: dateRange,
+            spend: item.spend || 0,
+            impressions: item.impressions || 0,
+            clicks: item.clicks || 0,
+            conversions: actions.conversions,
+            leads: actions.leads,
+            form_submissions: actions.form_submissions,
+            purchases: actions.purchases,
+            revenue: actions.revenue,
+            ctr: item.clicks && item.impressions ? ((item.clicks / item.impressions) * 100).toFixed(3) : 0,
+            cpc: item.clicks && item.spend ? (item.spend / item.clicks).toFixed(2) : 0,
+            roas: actions.revenue && item.spend ? (actions.revenue / item.spend).toFixed(2) : 0
+          };
+        })
       };
       
       console.log('DEBUG: Final account data result:', result);
@@ -248,11 +254,46 @@ class MetaService {
     return conversion ? parseInt(conversion.value) : 0;
   }
 
+  // Helper method to extract leads from actions
+  getLeads(actions) {
+    if (!actions) return 0;
+    const lead = actions.find(action => action.action_type === 'lead');
+    return lead ? parseInt(lead.value) : 0;
+  }
+
+  // Helper method to extract form submissions from actions
+  getFormSubmissions(actions) {
+    if (!actions) return 0;
+    const form = actions.find(action => action.action_type === 'form_submitted');
+    return form ? parseInt(form.value) : 0;
+  }
+
+  // Helper method to extract purchases from actions
+  getPurchases(actions) {
+    if (!actions) return 0;
+    const purchase = actions.find(action => action.action_type === 'purchase');
+    return purchase ? parseInt(purchase.value) : 0;
+  }
+
   // Helper method to extract revenue from actions
   getRevenue(actions) {
     if (!actions) return 0;
     const conversion = actions.find(action => action.action_type === 'offsite_conversion');
     return conversion ? parseFloat(conversion.value) || 0 : 0;
+  }
+
+  // Helper method to extract all marketing actions
+  getAllActions(actions) {
+    if (!actions) return {};
+    
+    return {
+      leads: this.getLeads(actions),
+      form_submissions: this.getFormSubmissions(actions),
+      purchases: this.getPurchases(actions),
+      conversions: this.getConversions(actions),
+      revenue: this.getRevenue(actions),
+      total_actions: actions.length || 0
+    };
   }
 
   // Fetch campaign performance data
@@ -294,18 +335,23 @@ class MetaService {
           insights = insightsData.data?.[0] || {};
         }
 
+        const actions = this.getAllActions(insights.actions);
+        
         allCampaigns.push({
           id: campaign.id,
           name: campaign.name,
           status: campaign.status,
           spend: parseFloat(insights.spend) || 0,
-          revenue: 0, // Calculate from conversions
+          revenue: actions.revenue,
           impressions: parseInt(insights.impressions) || 0,
           clicks: parseInt(insights.clicks) || 0,
-          conversions: this.getConversions(insights.actions) || 0,
+          conversions: actions.conversions || 0,
+          leads: actions.leads || 0,
+          form_submissions: actions.form_submissions || 0,
+          purchases: actions.purchases || 0,
           ctr: insights.clicks && insights.impressions ? (parseFloat(insights.clicks) / parseFloat(insights.impressions)) : 0,
           cpc: insights.spend && insights.clicks ? (parseFloat(insights.spend) / parseFloat(insights.clicks)) : 0,
-          roas: insights.spend && this.getConversions(insights.actions) > 0 ? (parseFloat(insights.spend) / this.getConversions(insights.actions)) : 0
+          roas: actions.revenue && parseFloat(insights.spend) > 0 ? (parseFloat(insights.spend) / actions.revenue) : 0
         });
       }
       
