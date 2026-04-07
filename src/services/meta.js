@@ -145,6 +145,7 @@ class MetaService {
       
       // Approach 1: Use Meta's standard date presets
       try {
+        console.log(`DEBUG: Fetching insights for date range: ${dateRange}, preset: ${datePreset}`);
         const insightsResponse = await fetch(`https://graph.facebook.com/v18.0/${accountId}/insights?level=account&${datePreset}&fields=spend,impressions,clicks,actions`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -155,7 +156,10 @@ class MetaService {
           const insightsData = await insightsResponse.json();
           console.log('DEBUG: Account insights response (approach 1):', insightsData);
           console.log('DEBUG: Account insights data array (approach 1):', insightsData.data);
+          console.log('DEBUG: Data length for', dateRange, ':', insightsData.data?.length || 0);
           insights = insightsData.data || [];
+        } else {
+          console.log('DEBUG: Approach 1 HTTP error:', insightsResponse.status, insightsResponse.statusText);
         }
       } catch (e) {
         console.log('DEBUG: Approach 1 failed:', e);
@@ -180,8 +184,9 @@ class MetaService {
         }
       }
       
-      // Approach 3: Try lifetime without date range
-      if (insights.length === 0) {
+      // Approach 3: Try lifetime without date range ONLY if all else fails
+      if (insights.length === 0 && dateRange !== 'maximum') {
+        console.log(`DEBUG: No data found for ${dateRange}, trying lifetime as fallback`);
         try {
           const lifetimeResponse = await fetch(`https://graph.facebook.com/v18.0/${accountId}/insights?level=account&date_preset=maximum&fields=spend,impressions,clicks,actions&limit=1`, {
             headers: {
