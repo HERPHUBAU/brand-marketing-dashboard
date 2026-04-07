@@ -165,8 +165,8 @@ class MetaService {
         console.log('DEBUG: Approach 1 failed:', e);
       }
       
-      // Approach 2: Try last_28d (Meta's default)
-      if (insights.length === 0) {
+      // Approach 2: Try last_28d (Meta's default) ONLY if not maximum
+      if (insights.length === 0 && dateRange !== 'maximum') {
         try {
           const defaultResponse = await fetch(`https://graph.facebook.com/v18.0/${accountId}/insights?level=account&date_preset=last_28d&fields=spend,impressions,clicks,actions`, {
             headers: {
@@ -184,25 +184,7 @@ class MetaService {
         }
       }
       
-      // Approach 3: Try lifetime without date range ONLY if all else fails
-      if (insights.length === 0 && dateRange !== 'maximum') {
-        console.log(`DEBUG: No data found for ${dateRange}, trying lifetime as fallback`);
-        try {
-          const lifetimeResponse = await fetch(`https://graph.facebook.com/v18.0/${accountId}/insights?level=account&date_preset=maximum&fields=spend,impressions,clicks,actions&limit=1`, {
-            headers: {
-              'Authorization': `Bearer ${token}`
-            }
-          });
-
-          if (lifetimeResponse.ok) {
-            const lifetimeData = await lifetimeResponse.json();
-            console.log('DEBUG: Account insights response (approach 3):', lifetimeData);
-            insights = lifetimeData.data || [];
-          }
-        } catch (e) {
-          console.log('DEBUG: Approach 3 failed:', e);
-        }
-      }
+      // NO FALLBACK TO LIFETIME - Return empty if no data found
 
       // Transform to expected format
       const result = {
