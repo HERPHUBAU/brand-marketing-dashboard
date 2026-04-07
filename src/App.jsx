@@ -495,7 +495,7 @@ const App = () => {
 
       if (adData && adData.status === "Success") {
         setMetaDataStatus({ 
-          status: adData.is_fallback ? `Showing Lifetime (No data in ${dateRange})` : `Connected: ${adData.connected_as}`, 
+          status: `Connected: ${adData.connected_as}`, 
           connected: true 
         });
 
@@ -521,9 +521,9 @@ const App = () => {
         }
 
         // Set other data with proper structure
-        setCampaignData(campaignData || []);
-        setCreativeData(creativeData || []);
-        setAudienceData(audienceData || []);
+        setCampaignData(campaignData?.campaigns || []);
+        setCreativeData(creativeData?.creatives || []);
+        setAudienceData(audienceData?.insights || []);
 
         // Generate benchmark comparison
         const benchmarkComparison = benchmarkService.comparePerformance({
