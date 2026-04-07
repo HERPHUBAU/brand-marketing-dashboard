@@ -1,491 +1,820 @@
-import './index.css';
-import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  LayoutDashboard, Megaphone, BarChart3, Users, Calendar, Search, 
-  ArrowUpRight, ArrowDownRight, ShieldCheck, TrendingUp, Layers, 
-  Scale, Crown, Fingerprint, Award, Zap, Target, ImageIcon, 
-  Wallet, Filter, MoreHorizontal, AlertCircle, RefreshCcw, X, CheckCircle2,
-  Lightbulb, Rocket, ShieldAlert, Compass
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+  LayoutDashboard, Megaphone, BarChart3, Users, Calendar, Search,
+  Layers, ImageIcon, Wallet, ShieldCheck, TrendingUp, CheckCircle2, X,
+  Target, Zap, Compass, Lightbulb, Download, AlertCircle, Award, Eye,
+  MousePointer, DollarSign, Activity, TrendingDown, UserCheck,
+  FileText, Settings, Lock, Unlock, RefreshCw
 } from 'lucide-react';
-import { 
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
-  AreaChart, Area, BarChart, Bar, Cell, PieChart, Pie, Radar, RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis
+import {
+  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  AreaChart, Area, BarChart, Bar, Radar, RadarChart, PolarGrid,
+  PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, Cell, LineChart, Line,
+  ComposedChart, Legend
 } from 'recharts';
 
-/**
- * BRAND & MARKETING - FULLY FUNCTIONAL DASHBOARD
- * - Implemented Campaign Table with Status logic
- * - Implemented Audience Matrix with Market Fit scoring
- * - Implemented "Execute Brand Audit" Interaction
- * - FINAL VERSION: Implemented Insights Module & Strategic Roadmap
- */
+// Import services
+import { authService } from './services/auth.js';
+import { metaService } from './services/meta.js';
+import { benchmarkService } from './services/benchmark.js';
+import { brandAuditService } from './services/brandAudit.js';
 
-// --- CONSTANTS & MOCK DATA ---
-const AD_ACCOUNT_NAME = "REPTILE_DIRECT_AU_01";
+// --- HELPERS: BIG TECH MINIMALISM ---
+const formatCurrency = (val) => new Intl.NumberFormat('en-AU', { 
+  style: 'currency', 
+  currency: 'AUD', 
+  maximumFractionDigits: 0 
+}).format(val || 0);
 
-const GENERATE_TIME_SERIES = (days = 30) => Array.from({ length: days }, (_, i) => ({
-  date: `03/${String(i + 1).padStart(2, '0')}`,
-  spend: 300 + Math.random() * 500,
-  roas: 2.5 + Math.random() * 3,
-}));
+const formatNumber = (val) => new Intl.NumberFormat('en-AU', { 
+  maximumFractionDigits: 0 
+}).format(val || 0);
 
-const INSIGHTS_RADAR_DATA = [
-  { subject: 'Brand Recall', A: 120, fullMark: 150 },
-  { subject: 'Creative Vitality', A: 98, fullMark: 150 },
-  { subject: 'Market Share', A: 86, fullMark: 150 },
-  { subject: 'ROAS Efficiency', A: 99, fullMark: 150 },
-  { subject: 'Customer LTV', A: 85, fullMark: 150 },
-  { subject: 'Retention', A: 65, fullMark: 150 },
-];
-
-const CAMPAIGN_DATA = [
-  { name: 'Elite Python Series', spend: 4200, roas: 5.2, status: 'Active', ctr: 3.2, conversions: 142 },
-  { name: 'Husbandry Essentials', spend: 2100, roas: 3.8, status: 'Active', ctr: 2.1, conversions: 88 },
-  { name: 'Varanid Masterclass', spend: 1500, roas: 4.1, status: 'Paused', ctr: 1.8, conversions: 45 },
-  { name: 'New Keeper Onboarding', spend: 900, roas: 6.4, status: 'Active', ctr: 4.5, conversions: 112 },
-  { name: 'Regional AU Logistics', spend: 400, roas: 1.2, status: 'Ended', ctr: 0.9, conversions: 12 },
-];
-
-const AUDIENCE_DATA = [
-  { name: 'Advanced Keepers', size: '12k', match: 94, segment: 'High Intent', cpa: 12.40 },
-  { name: 'Professional Breeders', size: '4.2k', match: 88, segment: 'B2B', cpa: 45.20 },
-  { name: 'Regional AU Enthusiasts', size: '28k', match: 72, segment: 'Growth', cpa: 8.90 },
-  { name: 'Elite Collection Owners', size: '1.5k', match: 98, segment: 'Niche', cpa: 112.00 },
-];
-
-const CREATIVE_DATA = [
-  { id: 1, name: 'Static_Python_Sale_01', spend: 1200, roas: 5.2, ctr: 3.4, tier: 'Top Performer' },
-  { id: 2, name: 'Video_Varanid_Enclosure_V2', spend: 3400, roas: 2.1, ctr: 1.2, tier: 'Underperforming' },
-  { id: 3, name: 'Carousel_Husbandry_Tips', spend: 850, roas: 4.8, ctr: 4.1, tier: 'Top Performer' },
-];
-
-const BUDGET_DATA = [
-  { name: 'Elite Python Series', type: 'Daily', limit: 200, spent: 185, status: 'On Track' },
-  { name: 'Husbandry Essentials', type: 'Lifetime', limit: 5000, spent: 4800, status: 'Overpacing' },
-  { name: 'Varanid Masterclass', type: 'Daily', limit: 100, spent: 20, status: 'Underpacing' },
-];
-
-// --- SHARED UI COMPONENTS ---
-
-const StatCard = ({ label, value, trend, up, loading }) => (
-  <div className="bg-[#33302E] border border-[#45413E] p-6 border-b-4 border-b-[#A84323]/20 hover:border-b-[#A84323] transition-all duration-300 shadow-xl">
-    <p className="text-[#D2B48C] font-montserrat text-[10px] uppercase font-black tracking-[0.2em] mb-2">{label}</p>
-    {loading ? (
-      <div className="h-8 w-24 bg-[#1A1817] animate-pulse" />
-    ) : (
-      <div className="flex items-baseline justify-between">
-        <h3 className="text-2xl font-lora font-bold text-[#D8D3CC]">{value}</h3>
-        <div className={`flex items-center font-montserrat text-[10px] font-bold ${up ? 'text-emerald-400' : 'text-rose-400'}`}>
-          {up ? <ArrowUpRight size={12} className="mr-1" /> : <ArrowDownRight size={12} className="mr-1" />}
-          {trend}
-        </div>
+// --- MODULE COMPONENTS ---
+const CampaignModule = ({ campaignData, formatCurrency, formatNumber }) => {
+  if (!campaignData || campaignData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 opacity-20">
+        <Megaphone size={48} className="mb-4" />
+        <p className="uppercase tracking-[0.3em] text-[10px] font-black">No Campaign Data Available</p>
       </div>
-    )}
-  </div>
-);
-
-// --- MODAL COMPONENTS ---
-
-const AuditModal = ({ isOpen, onClose }) => {
-  const [step, setStep] = useState(0);
-  const steps = ["Initializing Neural Link", "Analyzing Creative Drift", "Cross-referencing Audience Segments", "Generating Elite Report"];
-
-  useEffect(() => {
-    if (isOpen && step < steps.length) {
-      const timer = setTimeout(() => setStep(s => s + 1), 800);
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen, step]);
-
-  if (!isOpen) return null;
+    );
+  }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
-      <div className="bg-[#33302E] border border-[#45413E] w-full max-w-lg shadow-2xl relative overflow-hidden">
-        <div className="absolute top-0 left-0 h-1 bg-[#A84323] transition-all duration-500" style={{ width: `${(step/steps.length)*100}%` }} />
-        <div className="p-10 text-center">
-          <h3 className="text-[#D8D3CC] font-montserrat font-black text-xl uppercase tracking-tighter mb-6">Autonomous Brand Audit</h3>
-          
-          {step < steps.length ? (
-            <div className="space-y-6">
-              <Zap className="mx-auto text-[#A84323] animate-pulse" size={48} />
-              <p className="text-[#D2B48C] font-lora italic text-lg">{steps[step]}...</p>
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {campaignData.slice(0, 3).map((campaign, index) => (
+          <div key={index} className="bg-[#33302E] border border-[#45413E] p-6">
+            <h4 className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-2">{campaign.name || `Campaign ${index + 1}`}</h4>
+            <div className="space-y-2">
+              <div className="flex justify-between">
+                <span className="text-[10px] text-[#D8D3CC]">Spend:</span>
+                <span className="text-[10px] font-bold text-[#D8D3CC]">{formatCurrency(campaign.spend || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[10px] text-[#D8D3CC]">Results:</span>
+                <span className="text-[10px] font-bold text-[#D8D3CC]">{formatNumber(campaign.results || 0)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-[10px] text-[#D8D3CC]">ROAS:</span>
+                <span className="text-[10px] font-bold text-[#D8D3CC]">{(campaign.roas || 0).toFixed(2)}x</span>
+              </div>
             </div>
-          ) : (
-            <div className="space-y-6 animate-in zoom-in-95 duration-300">
-              <CheckCircle2 className="mx-auto text-emerald-400" size={48} />
-              <p className="text-[#D8D3CC] font-lora text-lg">Audit Complete. Account is performing in the <span className="text-[#A84323] font-bold">top 4%</span> of regional benchmarks.</p>
-              <button onClick={onClose} className="bg-[#A84323] text-white font-montserrat font-black text-[10px] tracking-widest px-8 py-3 uppercase">Download Report</button>
-            </div>
-          )}
-        </div>
-        <button onClick={onClose} className="absolute top-4 right-4 text-[#D2B48C] hover:text-white"><X size={20} /></button>
+          </div>
+        ))}
       </div>
     </div>
   );
 };
 
-// --- PAGE VIEWS ---
-
-const OverviewPage = ({ data, loading }) => (
-  <div className="space-y-10 animate-in fade-in duration-500">
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-      <StatCard label="Total Spend" value="$14,290" trend="11.2%" up={false} loading={loading} />
-      <StatCard label="Total Revenue" value="$58,402" trend="31.5%" up={true} loading={loading} />
-      <StatCard label="Blended ROAS" value="4.08x" trend="0.5x" up={true} loading={loading} />
-      <StatCard label="Total Impressions" value="1.2M" trend="8.2%" up={true} loading={loading} />
-    </div>
-
-    <div className="bg-[#33302E] border border-[#45413E] p-8 shadow-2xl">
-      <div className="flex justify-between items-center mb-10">
-        <h3 className="text-[#D8D3CC] font-montserrat font-black text-xl flex items-center gap-3 uppercase tracking-tighter">
-          <TrendingUp size={24} className="text-[#A84323]" /> Efficiency Trajectory
-        </h3>
+const CreativeModule = ({ creativeData }) => {
+  if (!creativeData || creativeData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 opacity-20">
+        <ImageIcon size={48} className="mb-4" />
+        <p className="uppercase tracking-[0.3em] text-[10px] font-black">No Creative Data Available</p>
       </div>
-      <div className="h-[350px]">
-        <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data}>
-            <defs>
-              <linearGradient id="ochreGrad" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#A84323" stopOpacity={0.3}/>
-                <stop offset="95%" stopColor="#A84323" stopOpacity={0}/>
-              </linearGradient>
-            </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#45413E" vertical={false} />
-            <XAxis dataKey="date" stroke="#D2B48C" fontSize={10} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="left" stroke="#D2B48C" fontSize={10} axisLine={false} tickLine={false} />
-            <YAxis yAxisId="right" orientation="right" stroke="#A84323" fontSize={10} axisLine={false} tickLine={false} />
-            <Tooltip 
-              contentStyle={{ 
-                backgroundColor: '#33302E', 
-                border: '1px solid #444',
-                borderRadius: '8px' 
-              }}
-              formatter={(value) => [value.toFixed(2), ""]}
-            />          
-            <Area yAxisId="left" type="monotone" dataKey="spend" stroke="#D8D3CC" strokeWidth={2} fill="transparent" />
-            <Area yAxisId="right" type="monotone" dataKey="roas" stroke="#A84323" strokeWidth={3} fill="url(#ochreGrad)" />
-          </AreaChart>
-        </ResponsiveContainer>
-      </div>
-    </div>
-  </div>
-);
+    );
+  }
 
-const CampaignsPage = () => (
-  <div className="bg-[#33302E] border border-[#45413E] shadow-2xl overflow-hidden animate-in fade-in duration-500">
-    <div className="overflow-x-auto">
-      <table className="w-full text-left border-collapse">
-        <thead className="bg-[#1A1817]/40 border-b border-[#45413E]">
-          <tr>
-            <th className="p-6 text-[#D2B48C] font-montserrat text-[10px] uppercase tracking-widest font-black">Campaign Identity</th>
-            <th className="p-6 text-[#D2B48C] font-montserrat text-[10px] uppercase tracking-widest font-black">Status</th>
-            <th className="p-6 text-[#D2B48C] font-montserrat text-[10px] uppercase tracking-widest font-black">Spend</th>
-            <th className="p-6 text-[#D2B48C] font-montserrat text-[10px] uppercase tracking-widest font-black">ROAS</th>
-            <th className="p-6 text-[#D2B48C] font-montserrat text-[10px] uppercase tracking-widest font-black">Conversions</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-[#45413E]">
-          {CAMPAIGN_DATA.map((c, i) => (
-            <tr key={i} className="hover:bg-white/[0.02] transition-colors">
-              <td className="p-6 font-lora font-bold text-[#D8D3CC]">{c.name}</td>
-              <td className="p-6">
-                <span className={`text-[9px] font-black uppercase px-3 py-1 ${
-                  c.status === 'Active' ? 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' : 
-                  c.status === 'Paused' ? 'text-amber-400 bg-amber-400/10 border border-amber-400/20' : 
-                  'text-rose-400 bg-rose-400/10 border border-rose-400/20'
-                }`}>
-                  {c.status}
-                </span>
-              </td>
-              <td className="p-6 font-montserrat text-[#D2B48C]">${c.spend.toLocaleString()}</td>
-              <td className="p-6 font-montserrat font-bold text-[#D8D3CC]">{c.roas}x</td>
-              <td className="p-6 font-montserrat text-[#D2B48C]">{c.conversions}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  </div>
-);
-
-const AudiencesPage = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-in fade-in duration-500">
-    {AUDIENCE_DATA.map((aud, i) => (
-      <div key={i} className="bg-[#33302E] border border-[#45413E] p-8 flex flex-col justify-between hover:border-[#A84323] transition-colors group">
-        <div>
-          <Users size={20} className="text-[#A84323] mb-6 group-hover:scale-110 transition-transform" />
-          <h5 className="text-[#D8D3CC] font-lora font-bold text-xl mb-1">{aud.name}</h5>
-          <p className="text-[#D2B48C] text-[10px] uppercase font-black mb-6 tracking-widest opacity-60">{aud.segment}</p>
-        </div>
-        <div className="space-y-4">
-          <div className="flex justify-between items-end border-b border-[#45413E] pb-3">
-            <span className="text-[#D2B48C] text-[10px] font-black uppercase tracking-tighter">Size</span>
-            <span className="text-[#D8D3CC] font-bold text-sm">{aud.size}</span>
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {creativeData.slice(0, 6).map((creative, index) => (
+        <div key={index} className="bg-[#33302E] border border-[#45413E] p-4">
+          <div className="aspect-video bg-[#45413E] rounded mb-4 flex items-center justify-center">
+            <ImageIcon size={24} className="text-[#D2B48C]" />
           </div>
-          <div className="flex justify-between items-end border-b border-[#45413E] pb-3">
-            <span className="text-[#D2B48C] text-[10px] font-black uppercase tracking-tighter">CPA Avg</span>
-            <span className="text-[#D8D3CC] font-bold text-sm">${aud.cpa}</span>
-          </div>
-          <div className="pt-2">
-            <div className="flex justify-between text-[10px] uppercase font-black mb-2">
-              <span className="text-[#D2B48C]">Market Fit</span>
-              <span className="text-[#A84323]">{aud.match}%</span>
-            </div>
-            <div className="h-1 w-full bg-[#1A1817]">
-              <div className="h-full bg-[#A84323]" style={{ width: `${aud.match}%` }} />
-            </div>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
-const CreativesPage = () => (
-  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 animate-in fade-in duration-500">
-    {CREATIVE_DATA.map((creative) => (
-      <div key={creative.id} className="bg-[#33302E] border border-[#45413E] overflow-hidden group shadow-xl hover:border-[#A84323] transition-all">
-        <div className="aspect-video bg-[#1A1817] flex items-center justify-center relative overflow-hidden">
-          <ImageIcon size={48} className="text-[#45413E] group-hover:scale-110 transition-transform duration-700" />
-          <div className={`absolute top-4 right-4 px-3 py-1 text-[8px] font-black uppercase tracking-widest ${
-            creative.tier === 'Top Performer' ? 'bg-emerald-500 text-white' : 
-            creative.tier === 'Underperforming' ? 'bg-rose-500 text-white' : 'bg-[#D2B48C] text-[#1A1817]'
-          }`}>
-            {creative.tier}
-          </div>
-        </div>
-        <div className="p-6">
-          <h4 className="text-[#D8D3CC] font-lora font-bold text-lg mb-4 truncate">{creative.name}</h4>
-          <div className="grid grid-cols-2 gap-4">
+          <h4 className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-2 truncate">{creative.name || `Creative ${index + 1}`}</h4>
+          <div className="grid grid-cols-2 gap-2 text-[10px]">
             <div>
-              <p className="text-[#D2B48C] text-[10px] font-black uppercase tracking-widest">Spend</p>
-              <p className="text-[#D8D3CC] font-bold">${creative.spend}</p>
+              <span className="text-[#D2B48C]">Impressions:</span>
+              <div className="font-bold text-[#D8D3CC]">{formatNumber(creative.impressions || 0)}</div>
             </div>
             <div>
-              <p className="text-[#D2B48C] text-[10px] font-black uppercase tracking-widest">ROAS</p>
-              <p className="text-[#A84323] font-bold">{creative.roas}x</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    ))}
-  </div>
-);
-
-const BudgetPage = () => (
-  <div className="space-y-8 animate-in fade-in duration-500">
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-      {BUDGET_DATA.map((item, i) => (
-        <div key={i} className="bg-[#33302E] border border-[#45413E] p-8 shadow-2xl">
-          <div className="flex justify-between items-start mb-6">
-            <h5 className="text-[#D8D3CC] font-lora font-bold text-lg">{item.name}</h5>
-            <span className={`text-[8px] font-black uppercase px-2 py-1 ${
-              item.status === 'On Track' ? 'bg-emerald-500/10 text-emerald-400' :
-              item.status === 'Overpacing' ? 'bg-amber-500/10 text-amber-400' : 'bg-blue-500/10 text-blue-400'
-            }`}>{item.status}</span>
-          </div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-[10px] uppercase font-black tracking-widest">
-              <span className="text-[#D2B48C]">Utilization</span>
-              <span className="text-[#D8D3CC]">{Math.round((item.spent/item.limit)*100)}%</span>
-            </div>
-            <div className="h-1.5 w-full bg-[#1A1817]">
-               <div className="h-full bg-[#A84323]" style={{ width: `${(item.spent/item.limit)*100}%` }} />
-            </div>
-          </div>
-          <div className="mt-6 pt-6 border-t border-[#45413E] flex justify-between items-end">
-            <div>
-              <p className="text-[#D2B48C] text-[10px] font-black uppercase tracking-widest opacity-60">Spent to Date</p>
-              <p className="text-[#D8D3CC] font-bold text-xl">${item.spent}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-[#D2B48C] text-[10px] font-black uppercase tracking-widest opacity-60">Daily Limit</p>
-              <p className="text-[#D8D3CC] font-bold text-xl">${item.limit}</p>
+              <span className="text-[#D2B48C]">CTR:</span>
+              <div className="font-bold text-[#D8D3CC]">{((creative.ctr || 0) * 100).toFixed(2)}%</div>
             </div>
           </div>
         </div>
       ))}
     </div>
-  </div>
-);
+  );
+};
 
-const InsightsPage = () => (
-  <div className="space-y-10 animate-in fade-in duration-500">
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Brand Health Radar */}
-      <div className="bg-[#33302E] border border-[#45413E] p-8 shadow-2xl">
-        <h3 className="text-[#D8D3CC] font-montserrat font-black text-xl flex items-center gap-3 uppercase tracking-tighter mb-8">
-          <Compass size={24} className="text-[#A84323]" /> Brand Health Vector
-        </h3>
-        <div className="h-[350px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <RadarChart cx="50%" cy="50%" outerRadius="80%" data={INSIGHTS_RADAR_DATA}>
-              <PolarGrid stroke="#45413E" />
-              <PolarAngleAxis dataKey="subject" tick={{ fill: '#D2B48C', fontSize: 10, fontWeight: 700 }} />
-              <PolarRadiusAxis angle={30} domain={[0, 150]} tick={false} axisLine={false} />
-              <Radar
-                name="Performance"
-                dataKey="A"
-                stroke="#A84323"
-                fill="#A84323"
-                fillOpacity={0.6}
-              />
-            </RadarChart>
+const AudienceModule = ({ audienceData }) => {
+  if (!audienceData || audienceData.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-96 opacity-20">
+        <Users size={48} className="mb-4" />
+        <p className="uppercase tracking-[0.3em] text-[10px] font-black">No Audience Data Available</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Age Demographics</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <BarChart data={[
+              { age: '18-24', value: 15 },
+              { age: '25-34', value: 35 },
+              { age: '35-44', value: 28 },
+              { age: '45-54', value: 17 },
+              { age: '55+', value: 5 }
+            ]}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#45413E" vertical={false} />
+              <XAxis dataKey="age" tick={{ fill: '#D2B48C', fontSize: 10 }} />
+              <YAxis tick={{ fill: '#D2B48C', fontSize: 10 }} />
+              <Tooltip contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} />
+              <Bar dataKey="value" fill="#A84323" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        
+        <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Gender Distribution</h3>
+          <ResponsiveContainer width="100%" height={350}>
+            <PieChart>
+              <Pie
+                data={[
+                  { name: 'Male', value: 65, color: '#A84323' },
+                  { name: 'Female', value: 30, color: '#D2B48C' },
+                  { name: 'Other', value: 5, color: '#45413E' }
+                ]}
+                cx="50%"
+                cy="50%"
+                innerRadius={60}
+                outerRadius={120}
+                paddingAngle={5}
+                dataKey="value"
+              >
+                {[
+                  { name: 'Male', value: 65, color: '#A84323' },
+                  { name: 'Female', value: 30, color: '#D2B48C' },
+                  { name: 'Other', value: 5, color: '#45413E' }
+                ].map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} />
+            </PieChart>
           </ResponsiveContainer>
         </div>
       </div>
+    </div>
+  );
+};
 
-      {/* Strategic Roadmap */}
-      <div className="bg-[#33302E] border border-[#45413E] p-8 shadow-2xl">
-        <h3 className="text-[#D8D3CC] font-montserrat font-black text-xl flex items-center gap-3 uppercase tracking-tighter mb-8">
-          <Lightbulb size={24} className="text-amber-400" /> Strategic Roadmap
-        </h3>
-        <div className="space-y-6">
-          <div className="flex gap-6 p-4 bg-[#1A1817]/40 border-l-4 border-l-emerald-500">
-            <Rocket className="text-emerald-500 shrink-0" size={24} />
+const BudgetModule = ({ realStats, formatCurrency }) => {
+  const totalBudget = realStats.reduce((acc, curr) => acc + curr.spend, 0);
+  const avgDailySpend = totalBudget / 30; // Assuming 30-day period
+
+  return (
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-[#33302E] border border-[#45413E] p-6">
+          <h3 className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-4">Total Budget</h3>
+          <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{formatCurrency(totalBudget)}</div>
+          <div className="text-[10px] text-[#A84323]">Current period</div>
+        </div>
+        
+        <div className="bg-[#33302E] border border-[#45413E] p-6">
+          <h3 className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-4">Daily Average</h3>
+          <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{formatCurrency(avgDailySpend)}</div>
+          <div className="text-[10px] text-[#A84323]">Per day</div>
+        </div>
+        
+        <div className="bg-[#33302E] border border-[#45413E] p-6">
+          <h3 className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-4">Budget Utilization</h3>
+          <div className="text-2xl font-bold text-[#D8D3CC] mb-2">78%</div>
+          <div className="w-full bg-[#45413E] h-2 rounded-full">
+            <div className="bg-[#A84323] h-2 rounded-full" style={{width: '78%'}}></div>
+          </div>
+        </div>
+      </div>
+      
+      <div className="bg-[#33302E] border border-[#45413E] p-8">
+        <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Budget Recommendations</h3>
+        <div className="space-y-4">
+          <div className="flex items-start gap-3">
+            <TrendingUp className="text-[#A84323] mt-1" size={16} />
             <div>
-              <h5 className="text-[#D8D3CC] font-lora font-black text-sm uppercase">Scale High-Efficiency Hub</h5>
-              <p className="text-[#D2B48C] text-xs mt-1 leading-relaxed">Increase budget by 25% for <span className="text-white italic">Elite Python Series</span> to capture untapped weekend demand.</p>
+              <h4 className="text-[#D8D3CC] text-sm font-bold mb-1">Increase Budget by 20%</h4>
+              <p className="text-[#D8D3CC] text-xs opacity-70">Your current ROAS indicates room for scaling. Consider increasing budget to capture additional demand.</p>
             </div>
           </div>
-          <div className="flex gap-6 p-4 bg-[#1A1817]/40 border-l-4 border-l-rose-500">
-            <ShieldAlert className="text-rose-500 shrink-0" size={24} />
+          <div className="flex items-start gap-3">
+            <Target className="text-[#A84323] mt-1" size={16} />
             <div>
-              <h5 className="text-[#D8D3CC] font-lora font-black text-sm uppercase">Creative Fatigue Mitigation</h5>
-              <p className="text-[#D2B48C] text-xs mt-1 leading-relaxed"><span className="text-white italic">Varanid Masterclass</span> assets show 40% CTR decay. Refresh with UGC-style testimonials.</p>
-            </div>
-          </div>
-          <div className="flex gap-6 p-4 bg-[#1A1817]/40 border-l-4 border-l-[#A84323]">
-            <Target className="text-[#A84323] shrink-0" size={24} />
-            <div>
-              <h5 className="text-[#D8D3CC] font-lora font-black text-sm uppercase">Lookalike Expansion</h5>
-              <p className="text-[#D2B48C] text-xs mt-1 leading-relaxed">Deploy 1% LAL from <span className="text-white italic">Advanced Keepers</span> segment to test lower funnel viability.</p>
+              <h4 className="text-[#D8D3CC] text-sm font-bold mb-1">Focus on High-Performing Creatives</h4>
+              <p className="text-[#D8D3CC] text-xs opacity-70">Reallocate 60% of budget to top 3 performing creatives for maximum efficiency.</p>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
-// --- MAIN APPLICATION ENTRY ---
-
-const App = () => {
-  const [activeTab, setActiveTab] = useState('Overview');
-  const [loading, setLoading] = useState(true);
-  const [data, setData] = useState([]);
-  const [isAuditOpen, setAuditOpen] = useState(false);
-
-  useEffect(() => {
-    setLoading(true);
-    const timer = setTimeout(() => {
-      setData(GENERATE_TIME_SERIES(30));
-      setLoading(false);
-    }, 600);
-    return () => clearTimeout(timer);
-  }, [activeTab]);
-
-  const renderContent = () => {
-    switch (activeTab) {
-      case 'Overview': return <OverviewPage data={data} loading={loading} />;
-      case 'Campaigns': return <CampaignsPage />;
-      case 'Creatives': return <CreativesPage />;
-      case 'Audiences': return <AudiencesPage />;
-      case 'Budget': return <BudgetPage />;
-      case 'Insights': return <InsightsPage />;
-      default: return <OverviewPage data={data} loading={loading} />;
-    }
-  };
-
+const InsightsModule = ({ benchmarkData, brandAuditData }) => {
   return (
-    <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] overflow-hidden">
-      <AuditModal isOpen={isAuditOpen} onClose={() => setAuditOpen(false)} />
-
-      {/* Sidebar Navigation */}
-      <aside className="w-72 border-r border-[#45413E] bg-[#33302E] flex flex-col z-50">
-        <div className="p-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-[#A84323] flex items-center justify-center shadow-lg shadow-[#A84323]/30">
-              <Layers className="text-white" size={22} />
+    <div className="space-y-6">
+      {brandAuditData && (
+        <div className="bg-[#33302E] border border-[#45413E] p-8">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Brand Audit Results</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{brandAuditData.categories.visual_identity?.weighted_score || 0}</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#D2B48C]">Visual Identity</div>
             </div>
-            <div className="font-montserrat leading-none">
-              <div className="font-black text-xl tracking-tighter text-[#D8D3CC]">BRAND</div>
-              <div className="font-light text-sm tracking-[0.3em] text-[#A84323]">& MARKETING</div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{brandAuditData.categories.business_identity?.weighted_score || 0}</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#D2B48C]">Business Identity</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{brandAuditData.categories.market_positioning?.weighted_score || 0}</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#D2B48C]">Market Positioning</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-[#D8D3CC] mb-2">{brandAuditData.categories.trust_authority?.weighted_score || 0}</div>
+              <div className="text-[10px] uppercase tracking-widest text-[#D2B48C]">Trust & Authority</div>
+            </div>
+          </div>
+          
+          {brandAuditData.recommendations && brandAuditData.recommendations.length > 0 && (
+            <div>
+              <h4 className="text-[#D2B48C] text-sm font-bold mb-4">Top Recommendations</h4>
+              <div className="space-y-3">
+                {brandAuditData.recommendations.slice(0, 3).map((rec, index) => (
+                  <div key={index} className="bg-[#1A1817] p-4 rounded border border-[#45413E]">
+                    <div className="flex items-start gap-3">
+                      <Lightbulb className="text-[#A84323] mt-1" size={16} />
+                      <div className="flex-1">
+                        <h5 className="text-[#D8D3CC] text-sm font-bold mb-1">{rec.title}</h5>
+                        <p className="text-[#D8D3CC] text-xs opacity-70 mb-2">{rec.description}</p>
+                        <span className="text-[10px] text-[#A84323] font-bold">{rec.expected_impact}</span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {benchmarkData && (
+        <div className="bg-[#33302E] border border-[#45413E] p-8">
+          <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Performance Insights</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h4 className="text-[#D2B48C] text-sm font-bold mb-3">Strengths</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="text-emerald-400" size={16} />
+                  <span className="text-[#D8D3CC] text-xs">Strong ROAS performance vs industry</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="text-emerald-400" size={16} />
+                  <span className="text-[#D8D3CC] text-xs">Efficient cost per acquisition</span>
+                </div>
+              </div>
+            </div>
+            <div>
+              <h4 className="text-[#D2B48C] text-sm font-bold mb-3">Improvement Areas</h4>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <AlertCircle className="text-yellow-400" size={16} />
+                  <span className="text-[#D8D3CC] text-xs">Below average engagement rate</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setDateRange('last_7d')}
+                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-200 ${
+                    dateRange === 'last_7d' 
+                      ? 'bg-[#A84323] text-white' 
+                      : 'bg-[#45413E] text-[#D8D3CC] hover:bg-[#5A524F]'
+                  }`}
+                >
+                  7d
+                </button>
+                <button
+                  onClick={() => setDateRange('last_28d')}
+                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-200 ${
+                    dateRange === 'last_28d' 
+                      ? 'bg-[#A84323] text-white' 
+                      : 'bg-[#45413E] text-[#D8D3CC] hover:bg-[#5A524F]'
+                  }`}
+                >
+                  28d
+                </button>
+                <button
+                  onClick={() => setDateRange('last_90d')}
+                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-200 ${
+                    dateRange === 'last_90d' 
+                      ? 'bg-[#A84323] text-white' 
+                      : 'bg-[#45413E] text-[#D8D3CC] hover:bg-[#5A524F]'
+                  }`}
+                >
+                  90d
+                </button>
+                <button
+                  onClick={() => setDateRange('maximum')}
+                  className={`px-4 py-2 text-[10px] font-black uppercase tracking-[0.3em] transition-all duration-200 ${
+                    dateRange === 'maximum' 
+                      ? 'bg-[#A84323] text-white' 
+                      : 'bg-[#45413E] text-[#D8D3CC] hover:bg-[#5A524F]'
+                  }`}
+                >
+                  Lifetime
+                </button>
+              </div>
             </div>
           </div>
         </div>
+      )}
+    </div>
+  );
+};
+
+const AuthGuard = ({ children, isAuthenticated, loading, error, onConnectMeta }) => {
+  if (loading) {
+    return (
+      <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] items-center justify-center">
+        <div className="text-center">
+          <RefreshCw className="animate-spin mx-auto mb-4" size={48} />
+          <p className="uppercase tracking-[0.3em] text-[10px] font-black">Verifying Access...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] items-center justify-center">
+        <div className="max-w-md mx-auto text-center p-8">
+          <Lock className="mx-auto mb-6 text-[#A84323]" size={64} />
+          <h1 className="text-2xl font-black mb-4">Access Restricted</h1>
+          <p className="text-sm mb-8 opacity-70">{error || 'This dashboard is exclusive to HERP HUB AU "The Collective" members.'}</p>
+          <button 
+            onClick={onConnectMeta}
+            className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all mb-4"
+          >
+            Connect Meta Account
+          </button>
+          <p className="text-[10px] opacity-50">Requires "The Collective" membership</p>
+        </div>
+      </div>
+    );
+  }
+
+  return children;
+};
+
+const AUDIENCE_DATA = [
+  { subject: 'Reptile Owners', A: 120, fullMark: 150 },
+  { subject: 'Breeders', A: 98, fullMark: 150 },
+  { subject: 'Genetics Fans', A: 86, fullMark: 150 },
+  { subject: 'Conservation', A: 99, fullMark: 150 },
+  { subject: 'New Keepers', A: 85, fullMark: 150 },
+];
+
+const AuditModal = ({ isOpen, onClose, isSyncing, onDownload }) => {
+  if (!isOpen) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-md p-6">
+      <div className="bg-[#33302E] border border-[#45413E] p-10 text-center max-w-lg relative shadow-2xl">
+        <button onClick={onClose} className="absolute top-4 right-4 text-[#D2B48C] hover:text-white"><X size={20}/></button>
+        <div className="w-16 h-16 bg-[#A84323] rounded-full flex items-center justify-center mx-auto mb-6 shadow-[0_0_20px_rgba(168,67,35,0.4)]">
+          <ShieldCheck className="text-white" size={32} />
+        </div>
+        <h3 className="text-[#D8D3CC] font-black text-xl uppercase mb-2">
+          {isSyncing ? 'Audit Initialized' : 'Audit Complete'}
+        </h3>
+        <p className="text-[#D2B48C] text-sm mb-8 font-medium leading-relaxed">
+          {isSyncing ? 'Scanning Meta Pixel data and Campaign API for anomalies...' : 'Live account data synchronized. Brand report ready for export.'}
+        </p>
+        <div className="w-full bg-[#1A1817] h-2 mb-8">
+          <div className={`bg-[#A84323] h-full transition-all duration-1000 shadow-[0_0_15px_#A84323] ${isSyncing ? 'w-2/3 animate-pulse' : 'w-full'}`}></div>
+        </div>
+        <div className="flex gap-4 justify-center">
+            {!isSyncing && (
+                <button onClick={onDownload} className="flex items-center gap-2 bg-[#D8D3CC] text-[#1A1817] px-6 py-3 uppercase text-[10px] font-black tracking-widest hover:bg-white transition-all">
+                    <Download size={14} /> Download PDF
+                </button>
+            )}
+            <button onClick={onClose} className="bg-[#A84323] text-white px-6 py-3 uppercase text-[10px] font-black tracking-widest hover:brightness-110 transition-all">
+                {isSyncing ? 'Cancel' : 'Close'}
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, trend, up }) => (
+  <div className="bg-[#33302E] border border-[#45413E] p-6 shadow-xl transition-all hover:border-[#A84323]/50">
+    <p className="text-[#D2B48C] text-[10px] uppercase font-black tracking-widest mb-2">{label}</p>
+    <div className="flex items-baseline justify-between">
+      <h3 className="text-2xl font-bold text-[#D8D3CC]">{value}</h3>
+      <div className={`text-[10px] font-bold ${up ? 'text-emerald-400' : 'text-rose-400'}`}>{trend}</div>
+    </div>
+  </div>
+);
+
+const App = () => {
+  const [activeTab, setActiveTab] = useState('Overview');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [dateRange, setDateRange] = useState('last_28d'); // Use Meta's standard
+  const [metaDataStatus, setMetaDataStatus] = useState({ status: 'Connecting...', connected: false });
+  const [realStats, setRealStats] = useState([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userData, setUserData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [campaignData, setCampaignData] = useState([]);
+  const [creativeData, setCreativeData] = useState([]);
+  const [audienceData, setAudienceData] = useState([]);
+  const [benchmarkData, setBenchmarkData] = useState(null);
+  const [brandAuditData, setBrandAuditData] = useState(null);
+
+  // --- AUTHENTICATION CHECK ---
+  useEffect(() => {
+    const checkAuth = async () => {
+      try {
+        setLoading(true);
+        const authResult = await authService.checkCollectiveAccess();
+        
+        if (authResult.authorized) {
+          setIsAuthenticated(true);
+          setUserData(authResult.user);
+          await fetchKeys(); // Load data after successful auth
+        } else {
+          setIsAuthenticated(false);
+          setError('Access denied: The Collective membership required');
+        }
+      } catch (error) {
+        console.error('Auth check failed:', error);
+        setIsAuthenticated(false);
+        setError('Authentication failed');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // --- CORE DATA BRIDGE ---
+  const fetchKeys = useCallback(async () => {
+    if (!isAuthenticated) return;
+    
+    try {
+      setIsSyncing(true);
+      setMetaDataStatus(prev => ({ ...prev, status: 'Syncing Meta...' }));
+      setError(null);
+      
+      // Clear previous data to ensure refresh
+      setRealStats([]);
+      setCampaignData([]);
+      setCreativeData([]);
+      setAudienceData([]);
+      
+      // Fetch comprehensive data
+      const [adData, campaignData, creativeData, audienceData] = await Promise.all([
+        metaService.getAdAccountData(dateRange),
+        metaService.getCampaignPerformance(dateRange),
+        metaService.getCreativePerformance(dateRange),
+        metaService.getAudienceInsights()
+      ]);
+
+      if (adData && adData.status === "Success") {
+        setMetaDataStatus({ 
+          status: adData.is_fallback ? `Showing Lifetime (No data in ${dateRange})` : `Connected: ${adData.connected_as}`, 
+          connected: true 
+        });
+
+        console.log('DEBUG: Processing adData:', adData);
+        console.log('DEBUG: adData.meta_data:', adData.meta_data);
+        console.log('DEBUG: adData.meta_data length:', adData.meta_data?.length);
+
+        if (adData.meta_data && adData.meta_data.length > 0) {
+          const processed = adData.meta_data.map(item => ({
+            spend: parseFloat(item.spend) || 0,
+            impressions: parseInt(item.impressions) || 0,
+            clicks: parseInt(item.clicks) || 0,
+            conversions: parseInt(item.conversions) || 0,
+            revenue: parseFloat(item.revenue) || 0,
+            roas: item.purchase_roas ? parseFloat(item.purchase_roas[0]?.value || 0) : 0,
+            date: dateRange
+          }));
+          console.log('DEBUG: Processed realStats:', processed);
+          setRealStats(processed);
+        } else {
+          console.log('DEBUG: No meta_data found, setting empty realStats');
+          setRealStats([]); 
+        }
+
+        // Set other data with proper structure
+        setCampaignData(campaignData || []);
+        setCreativeData(creativeData || []);
+        setAudienceData(audienceData || []);
+
+        // Generate benchmark comparison
+        const benchmarkComparison = benchmarkService.comparePerformance({
+          advertising: metaService.calculateKPIs(adData.meta_data || []),
+          social_media: audienceData?.social_metrics || {},
+          brand_metrics: {}
+        });
+
+        setBenchmarkData(benchmarkComparison);
+      } else {
+        setMetaDataStatus({ status: 'No Data Found', connected: false });
+        setRealStats([]);
+      }
+    } catch (e) {
+      console.error('Data fetch failed:', e);
+      setMetaDataStatus({ status: 'Connection Failed', connected: false });
+      setError('Failed to fetch data. Please check your Meta connection.');
+      setRealStats([]);
+    } finally {
+      setIsSyncing(false);
+    }
+  }, [dateRange, isAuthenticated]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchKeys();
+    }
+  }, [dateRange, isAuthenticated, fetchKeys]);
+
+  // Handle OAuth callback
+  useEffect(() => {
+    const handleCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      const state = urlParams.get('state');
+      
+      if (code && state) {
+        console.log('DEBUG: Processing OAuth callback', { code, state });
+        
+        try {
+          const result = await authService.handleMetaCallback(code, state);
+          if (result.success) {
+            console.log('DEBUG: OAuth successful', result);
+            // Clean up URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            // Trigger re-authentication check
+            window.location.reload();
+          }
+        } catch (error) {
+          console.error('DEBUG: OAuth callback failed', error);
+        }
+      }
+    };
+
+    handleCallback();
+  }, []);
+
+  const handleExecuteAudit = async () => {
+    setIsModalOpen(true);
+    setIsSyncing(true);
+    
+    try {
+      await fetchKeys();
+      
+      // Conduct brand audit
+      const brandAudit = await brandAuditService.conductAudit(
+        userData?.brand_data || {},
+        audienceData?.social_metrics || {},
+        {}
+      );
+      setBrandAuditData(brandAudit);
+      
+    } catch (error) {
+      console.error('Audit failed:', error);
+      setError('Brand audit failed. Please try again.');
+    } finally {
+      setTimeout(() => setIsSyncing(false), 2000);
+    }
+  };
+
+  const handleConnectMeta = () => {
+    authService.initiateMetaAuth();
+  };
+
+  const handleLogout = () => {
+    authService.clearAuth();
+    setIsAuthenticated(false);
+    setUserData(null);
+    setError('Access denied: The Collective membership required');
+  };
+
+  const renderContent = () => {
+    const totalSpend = realStats.reduce((acc, curr) => acc + curr.spend, 0);
+    const totalImps = realStats.reduce((acc, curr) => acc + curr.impressions, 0);
+    const totalClicks = realStats.reduce((acc, curr) => acc + curr.clicks, 0);
+    const totalConversions = realStats.reduce((acc, curr) => acc + curr.conversions, 0);
+    const totalRevenue = realStats.reduce((acc, curr) => acc + curr.revenue, 0);
+    const avgRoas = realStats.length > 0 
+      ? (realStats.reduce((acc, curr) => acc + curr.roas, 0) / realStats.length).toFixed(2) 
+      : "0.00";
+    const avgCTR = totalImps > 0 ? ((totalClicks / totalImps) * 100).toFixed(2) : "0.00";
+    const avgCPC = totalClicks > 0 ? (totalSpend / totalClicks).toFixed(2) : "0.00";
+    const conversionRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(2) : "0.00";
+
+    return (
+      <div className="space-y-10 animate-in fade-in duration-500">
+        {activeTab === 'Overview' && (
+          <>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <StatCard label="Total Spend" value={formatCurrency(totalSpend)} trend="META API" up={totalSpend > 0} />
+              <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} trend={`${avgRoas}x`} up={parseFloat(avgRoas) > 0} />
+              <StatCard label="Blended ROAS" value={`${avgRoas}x`} trend="AVG" up={parseFloat(avgRoas) > 2} />
+              <StatCard label="Total Impressions" value={formatNumber(totalImps)} trend="REACH" up={totalImps > 0} />
+            </div>
+            
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Spend & Revenue Trend</h3>
+                 <ResponsiveContainer width="100%" height={350}>
+                    <ComposedChart data={realStats.length > 0 ? realStats : [{spend: 0, revenue: 0}]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#45413E" vertical={false} />
+                      <XAxis dataKey="date" hide />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} 
+                        formatter={(val, name) => [name === 'revenue' ? formatCurrency(val) : formatCurrency(val), name === 'revenue' ? 'Revenue' : 'Spend']}
+                      />
+                      <Area type="monotone" dataKey="spend" stroke="#A84323" fill="#A84323" fillOpacity={0.1} strokeWidth={3} />
+                      <Line type="monotone" dataKey="revenue" stroke="#D2B48C" strokeWidth={3} dot={false} />
+                    </ComposedChart>
+                 </ResponsiveContainer>
+              </div>
+              
+              <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
+                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Performance Metrics</h3>
+                 <ResponsiveContainer width="100%" height={350}>
+                    <BarChart data={[
+                      { metric: 'CTR', value: parseFloat(avgCTR), max: 5 },
+                      { metric: 'CPC', value: parseFloat(avgCPC), max: 5 },
+                      { metric: 'Conv. Rate', value: parseFloat(conversionRate), max: 5 },
+                      { metric: 'ROAS', value: parseFloat(avgRoas), max: 10 }
+                    ]}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#45413E" vertical={false} />
+                      <XAxis dataKey="metric" tick={{ fill: '#D2B48C', fontSize: 10 }} />
+                      <YAxis hide />
+                      <Tooltip 
+                        contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} 
+                        formatter={(val) => [val.toFixed(2), 'Value']}
+                      />
+                      <Bar dataKey="value" fill="#A84323" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                 </ResponsiveContainer>
+              </div>
+            </div>
+            
+            {benchmarkData && (
+              <div className="bg-[#33302E] border border-[#45413E] p-8">
+                <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Industry Benchmark Comparison</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-[#D8D3CC] mb-2">{benchmarkData.overall_score}</div>
+                    <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Overall Score</div>
+                    <div className={`text-[10px] font-bold ${
+                      benchmarkData.grade?.grade.includes('A') ? 'text-emerald-400' : 
+                      benchmarkData.grade?.grade.includes('B') ? 'text-yellow-400' : 
+                      'text-red-400'
+                    }`}>{benchmarkData.grade?.grade} - {benchmarkData.grade?.description}</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-[#D8D3CC] mb-2">
+                      {benchmarkData.advertising?.roas?.performance === 'above_benchmark' ? '↑' : 
+                       benchmarkData.advertising?.roas?.performance === 'below_benchmark' ? '↓' : '→'}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">ROAS vs Industry</div>
+                    <div className="text-[10px] text-[#A84323]">
+                    {typeof benchmarkData.advertising?.roas?.member === 'number' ? benchmarkData.advertising.roas.member.toFixed(2) : '0.00'}x vs {typeof benchmarkData.advertising?.roas?.benchmark === 'number' ? benchmarkData.advertising.roas.benchmark.toFixed(2) : '0.00'}x
+                  </div>
+                  </div>
+                  <div className="text-center">
+                    <div className="text-3xl font-bold text-[#D8D3CC] mb-2">
+                      {benchmarkData.advertising?.ctr?.performance === 'above_benchmark' ? '↑' : 
+                       benchmarkData.advertising?.ctr?.performance === 'below_benchmark' ? '↓' : '→'}
+                    </div>
+                    <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">CTR vs Industry</div>
+                    <div className="text-[10px] text-[#A84323]">
+                    {typeof benchmarkData.advertising?.ctr?.member === 'number' ? benchmarkData.advertising.ctr.member.toFixed(2) : '0.00'}% vs {typeof benchmarkData.advertising?.ctr?.benchmark === 'number' ? benchmarkData.advertising.ctr.benchmark.toFixed(2) : '0.00'}%
+                  </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+        
+        {activeTab === 'Campaigns' && (
+          <CampaignModule campaignData={campaignData} formatCurrency={formatCurrency} formatNumber={formatNumber} />
+        )}
+        
+        {activeTab === 'Creatives' && (
+          <CreativeModule creativeData={creativeData} />
+        )}
+        
+        {activeTab === 'Audiences' && (
+          <AudienceModule audienceData={audienceData} />
+        )}
+        
+        {activeTab === 'Budget' && (
+          <BudgetModule realStats={realStats} formatCurrency={formatCurrency} />
+        )}
+        
+        {activeTab === 'Insights' && (
+          <InsightsModule benchmarkData={benchmarkData} brandAuditData={brandAuditData} />
+        )}
+      </div>
+    );
+  };
+
+  return (
+    <AuthGuard 
+      isAuthenticated={isAuthenticated}
+      loading={loading}
+      error={error}
+      onConnectMeta={handleConnectMeta}
+      onLogout={handleLogout}
+      userData={userData}
+    >
+      <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] overflow-hidden font-sans">
+        <AuditModal 
+          isOpen={isModalOpen} 
+          onClose={() => setIsModalOpen(false)} 
+          isSyncing={isSyncing} 
+          onDownload={() => {
+            // PDF download functionality would go here
+            console.log('Downloading PDF audit report...');
+          }} 
+        />
+     
+      <aside className="w-72 border-r border-[#45413E] bg-[#33302E] flex flex-col z-50">
+        <div className="p-8">
+          <img src="https://herphub.au/wp-content/uploads/2026/02/cropped-HERP-Hub-AU-Transparent-Background-scaled-1.png" alt="HERP HUB AU" className="w-48 mb-6 mx-auto" />
+          <div className="h-px bg-[#45413E] w-full mb-6" />
+          <p className="text-[10px] font-black text-[#A84323] tracking-[0.3em] uppercase mb-8 text-center">Marketing & Brand Audit</p>
+        </div>
 
         <nav className="flex-1 px-4 space-y-1">
-          {[
-            { id: 'Overview', icon: LayoutDashboard },
-            { id: 'Campaigns', icon: Megaphone },
-            { id: 'Creatives', icon: ImageIcon },
-            { id: 'Audiences', icon: Users },
-            { id: 'Budget', icon: Wallet },
-            { id: 'Insights', icon: BarChart3 },
-          ].map((tab) => (
-            <button 
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`w-full flex items-center gap-4 px-6 py-4 transition-all font-montserrat group ${
-                activeTab === tab.id ? 'bg-[#A84323] text-white shadow-xl' : 'text-[#D2B48C] hover:bg-white/5'
-              }`}
-            >
-              <tab.icon size={18} className={activeTab === tab.id ? 'text-white' : 'group-hover:text-[#D8D3CC]'} />
-              <span className="text-[10px] font-black tracking-widest uppercase">{tab.id}</span>
+          {['Overview', 'Campaigns', 'Creatives', 'Audiences', 'Budget', 'Insights'].map((id) => (
+            <button key={id} onClick={() => setActiveTab(id)} className={`w-full text-left px-6 py-4 uppercase text-[10px] font-black tracking-widest transition-all ${activeTab === id ? 'bg-[#A84323] text-white shadow-xl' : 'text-[#D2B48C] hover:bg-white/5'}`}>
+              {id}
             </button>
           ))}
         </nav>
 
-        <div className="p-8 border-t border-[#45413E]">
-          <div className="bg-[#1A1817] p-4 border border-[#45413E] flex items-center gap-3">
-            <ShieldCheck size={20} className="text-[#A84323]" />
-            <div>
-              <p className="text-[8px] font-montserrat font-black uppercase text-[#D2B48C] tracking-widest">Active Account</p>
-              <p className="text-[10px] font-lora font-bold text-[#D8D3CC] mt-1">{AD_ACCOUNT_NAME}</p>
+        <div className="p-6 border-t border-[#45413E]">
+          <div className="p-4 bg-[#5E2C25] rounded border border-[#D8D3CC]/10 shadow-lg">
+            <div className="flex items-center gap-2 mb-1">
+              <div className={`w-1.5 h-1.5 rounded-full ${metaDataStatus.connected ? 'bg-emerald-400' : 'bg-rose-500'} animate-pulse`} />
+              <p className="text-[9px] uppercase font-black opacity-60 text-white">System Status</p>
             </div>
+            <p className="text-[10px] text-white font-bold truncate">{metaDataStatus.status}</p>
           </div>
         </div>
       </aside>
 
-      {/* Main UI */}
-      <main className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="h-24 border-b border-[#45413E] flex items-center justify-between px-12 bg-[#1A1817]/60 backdrop-blur-2xl z-40">
-          <div className="flex items-center gap-8">
-            <h2 className="text-[10px] font-montserrat font-black text-[#D2B48C] uppercase tracking-[0.5em]">{activeTab}</h2>
-            <div className="h-10 w-px bg-[#45413E]" />
-            <div className="flex items-center gap-3 text-[10px] font-montserrat font-bold text-[#D8D3CC] bg-[#33302E] px-6 py-3 border border-[#45413E]">
-              <Calendar size={14} className="text-[#A84323]" /> MAR 01 - MAR 31
-            </div>
-          </div>
-          <div className="flex gap-4">
-             <button className="text-[#D2B48C] p-3 border border-[#45413E] hover:bg-[#A84323] hover:text-white transition-all"><Search size={18} /></button>
-             <button 
-               onClick={() => setAuditOpen(true)}
-               className="bg-[#A84323] text-white font-montserrat text-[10px] font-black uppercase px-8 py-3.5 tracking-[0.2em] shadow-lg hover:brightness-110 active:scale-95 transition-all"
-             >
-               Execute Brand Audit
-             </button>
+      <main className="flex-1 flex flex-col overflow-hidden">
+        <header className="h-24 border-b border-[#45413E] flex items-center justify-between px-12 bg-[#1A1817]/80 backdrop-blur-xl z-40">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#D2B48C]">{activeTab}</h2>
+          <div className="flex items-center gap-4">
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="bg-[#33302E] border border-[#45413E] text-[#D2B48C] text-[10px] font-black uppercase px-4 py-3 tracking-widest focus:outline-none focus:border-[#A84323] cursor-pointer">
+              <option value="last_30d">Last 30 Days</option>
+              <option value="last_90d">Last Quarter</option>
+              <option value="maximum">Lifetime</option>
+            </select>
+            <button onClick={handleExecuteAudit} className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all">
+              Execute Brand Audit
+            </button>
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-12 custom-scroll bg-[radial-gradient(circle_at_top_right,#A8432308,transparent_40%)]">
-          <div className="max-w-6xl mx-auto">
-            {renderContent()}
-          </div>
+        <div className="flex-1 overflow-y-auto p-12 custom-scroll">
+          <div className="max-w-6xl mx-auto">{renderContent()}</div>
         </div>
       </main>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Lora:ital,wght@0,400;0,700;1,400&display=swap');
-        .font-montserrat { font-family: 'Montserrat', sans-serif; }
-        .font-lora { font-family: 'Lora', serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
+        .font-sans { font-family: 'Montserrat', sans-serif; }
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: #1A1817; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #45413E; }
       `}} />
     </div>
+    </AuthGuard>
   );
 };
 
