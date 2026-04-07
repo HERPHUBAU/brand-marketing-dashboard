@@ -190,8 +190,8 @@ class MetaService {
       const result = {
         status: "Success",
         connected_as: data.data[0].name,
-        is_fallback: insights.length === 0 && dateRange !== 'maximum',
-        meta_data: insights.length === 0 && dateRange !== 'maximum' ? [] : insights.map(item => ({
+        is_fallback: false, // Always false since we don't use fallback anymore
+        meta_data: insights.length === 0 ? [] : insights.map(item => ({
           date: dateRange,
           spend: item.spend || 0,
           impressions: item.impressions || 0,
