@@ -243,6 +243,12 @@ class MetaService {
       case '90':
       case 'last_90d':
         return 'date_preset=last_90d';
+      case '180':
+      case 'last_180d':
+        return 'date_preset=last_180d';
+      case 'year':
+      case 'last_year':
+        return 'date_preset=last_year';
       case 'lifetime':
       case 'maximum':
         return 'date_preset=maximum';
