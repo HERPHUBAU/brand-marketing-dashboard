@@ -237,31 +237,25 @@ class MetaService {
 
   // Helper method to get date range for Meta API
   getDateRange(range) {
-    // Use Meta's standard date presets for reliable data
+    // Use exact date ranges specified: 7, 14, 28, 30 days and maximum
     switch(range) {
       case '7':
       case 'last_7d':
         return 'date_preset=last_7d';
+      case '14':
+      case 'last_14d':
+        return 'date_preset=last_14d';
       case '28':
       case 'last_28d':
         return 'date_preset=last_28d';
       case '30':
       case 'last_30d':
-        return 'date_preset=last_28d'; // Use Meta's standard 28d instead of 30d
-      case '90':
-      case 'last_90d':
-        return 'date_preset=last_90d';
-      case '180':
-      case 'last_180d':
-        return 'date_preset=last_90d'; // Use 90d instead of invalid 180d
-      case 'year':
-      case 'last_year':
-        return 'date_preset=last_year';
+        return 'date_preset=last_30d';
       case 'lifetime':
       case 'maximum':
         return 'date_preset=maximum';
       default:
-        return 'date_preset=last_28d'; // Default to Meta's standard
+        return 'date_preset=last_30d'; // Default to 30 days
     }
   }
 

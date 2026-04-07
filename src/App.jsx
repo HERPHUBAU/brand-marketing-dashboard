@@ -791,11 +791,11 @@ const App = () => {
           <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#D2B48C]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>{activeTab}</h2>
           <div className="flex items-center gap-4">
             <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="bg-[#33302E] border border-[#45413E] text-[#D2B48C] text-[10px] font-black uppercase px-4 py-3 tracking-widest focus:outline-none focus:border-[#A84323] cursor-pointer" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
-              <option value="last_7d">Last 7 Days</option>
-              <option value="last_28d">Last 28 Days</option>
-              <option value="last_90d">Last 90 Days</option>
-              <option value="last_year">Last Year</option>
-              <option value="maximum">Lifetime</option>
+              <option value="last_7d">7 Days</option>
+              <option value="last_14d">14 Days</option>
+              <option value="last_28d">28 Days</option>
+              <option value="last_30d">30 Days</option>
+              <option value="maximum">Maximum</option>
             </select>
             <button onClick={handleExecuteAudit} className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
               Execute Brand Audit
