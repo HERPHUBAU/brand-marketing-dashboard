@@ -509,8 +509,11 @@ const App = () => {
             impressions: parseInt(item.impressions) || 0,
             clicks: parseInt(item.clicks) || 0,
             conversions: parseInt(item.conversions) || 0,
+            leads: parseInt(item.leads) || 0,
+            form_submissions: parseInt(item.form_submissions) || 0,
+            purchases: parseInt(item.purchases) || 0,
             revenue: parseFloat(item.revenue) || 0,
-            roas: item.purchase_roas ? parseFloat(item.purchase_roas[0]?.value || 0) : 0,
+            roas: parseFloat(item.roas) || 0,
             date: dateRange
           }));
           console.log('DEBUG: Processed realStats:', processed);
