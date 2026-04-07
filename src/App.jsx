@@ -791,8 +791,11 @@ const App = () => {
           <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#D2B48C]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>{activeTab}</h2>
           <div className="flex items-center gap-4">
             <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="bg-[#33302E] border border-[#45413E] text-[#D2B48C] text-[10px] font-black uppercase px-4 py-3 tracking-widest focus:outline-none focus:border-[#A84323] cursor-pointer" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
-              <option value="last_30d">Last 30 Days</option>
-              <option value="last_90d">Last Quarter</option>
+              <option value="last_7d">Last 7 Days</option>
+              <option value="last_28d">Last 28 Days</option>
+              <option value="last_90d">Last 90 Days</option>
+              <option value="last_180d">Last 180 Days</option>
+              <option value="last_year">Last Year</option>
               <option value="maximum">Lifetime</option>
             </select>
             <button onClick={handleExecuteAudit} className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
