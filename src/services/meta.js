@@ -207,15 +207,18 @@ class MetaService {
       // Transform to expected format
       const result = {
         status: "Success",
-        connected_as: data.data[0].name || "HERP HUB AU Account",
-        is_fallback: false,
-        meta_data: insights.map(insight => ({
-          spend: parseFloat(insight.spend) || 0,
-          revenue: 0, // Will be calculated from conversions
-          impressions: parseInt(insight.impressions) || 0,
-          clicks: parseInt(insight.clicks) || 0,
-          conversions: this.getConversions(insight.actions) || 0,
-          purchase_roas: [{ value: insight.spend && this.getConversions(insight.actions) > 0 ? (parseFloat(insight.spend) / this.getConversions(insight.actions)) : 0 }]
+        connected_as: data.data[0].name,
+        is_fallback: insights.length === 0 && dateRange !== 'maximum',
+        meta_data: insights.length === 0 && dateRange !== 'maximum' ? [] : insights.map(item => ({
+          date: dateRange,
+          spend: item.spend || 0,
+          impressions: item.impressions || 0,
+          clicks: item.clicks || 0,
+          conversions: this.getConversions(item.actions),
+          revenue: this.getRevenue(item.actions),
+          ctr: item.clicks && item.impressions ? ((item.clicks / item.impressions) * 100).toFixed(3) : 0,
+          cpc: item.clicks && item.spend ? (item.spend / item.clicks).toFixed(2) : 0,
+          roas: this.getRevenue(item.actions) && item.spend ? (this.getRevenue(item.actions) / item.spend).toFixed(2) : 0
         }))
       };
       
@@ -250,7 +253,7 @@ class MetaService {
         return 'date_preset=last_90d';
       case '180':
       case 'last_180d':
-        return 'date_preset=last_180d';
+        return 'date_preset=last_90d'; // Use 90d instead of invalid 180d
       case 'year':
       case 'last_year':
         return 'date_preset=last_year';
