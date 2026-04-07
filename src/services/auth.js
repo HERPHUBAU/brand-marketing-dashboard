@@ -162,7 +162,7 @@ class AuthService {
       console.log('DEBUG: Processing OAuth callback with real token exchange');
       
       // Exchange authorization code for access token
-      const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=901866836185231&client_secret=667b96ceb4fee29add49894cfba04141&redirect_uri=${encodeURIComponent(window.location.origin + '/auth/meta/callback')}&code=${code}`, {
+      const tokenResponse = await fetch(`https://graph.facebook.com/v18.0/oauth/access_token?client_id=901866836185231&client_secret=667b96ceb4fee29add49894cfba04141&redirect_uri=${encodeURIComponent('https://audit.herphub.au')}&code=${code}`, {
         method: 'POST'
       });
       
