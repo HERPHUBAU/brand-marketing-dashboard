@@ -219,7 +219,7 @@ const BudgetModule = ({ realStats, formatCurrency }) => {
   );
 };
 
-const InsightsModule = ({ benchmarkData, brandAuditData }) => {
+const InsightsModule = ({ benchmarkData, brandAuditData, dateRange, setDateRange }) => {
   return (
     <div className="space-y-6">
       {brandAuditData && (
@@ -734,7 +734,12 @@ const App = () => {
         )}
         
         {activeTab === 'Insights' && (
-          <InsightsModule benchmarkData={benchmarkData} brandAuditData={brandAuditData} />
+          <InsightsModule 
+            benchmarkData={benchmarkData} 
+            brandAuditData={brandAuditData} 
+            dateRange={dateRange}
+            setDateRange={setDateRange}
+          />
         )}
       </div>
     );
