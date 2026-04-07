@@ -794,7 +794,6 @@ const App = () => {
               <option value="last_7d">Last 7 Days</option>
               <option value="last_28d">Last 28 Days</option>
               <option value="last_90d">Last 90 Days</option>
-              <option value="last_180d">Last 180 Days</option>
               <option value="last_year">Last Year</option>
               <option value="maximum">Lifetime</option>
             </select>

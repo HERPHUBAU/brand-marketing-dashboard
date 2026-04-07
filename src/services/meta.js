@@ -272,6 +272,13 @@ class MetaService {
     return conversion ? parseInt(conversion.value) : 0;
   }
 
+  // Helper method to extract revenue from actions
+  getRevenue(actions) {
+    if (!actions) return 0;
+    const conversion = actions.find(action => action.action_type === 'offsite_conversion');
+    return conversion ? parseFloat(conversion.value) || 0 : 0;
+  }
+
   // Fetch campaign performance data
   async fetchCampaignData(dateRange = '30') {
     try {
