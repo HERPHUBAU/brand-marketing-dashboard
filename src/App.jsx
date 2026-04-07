@@ -749,7 +749,7 @@ const App = () => {
       onLogout={handleLogout}
       userData={userData}
     >
-      <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] overflow-hidden font-sans">
+      <div className="flex h-screen bg-[#1A1817] text-[#D8D3CC] overflow-hidden" style={{ fontFamily: 'Lora, serif' }}>
         <AuditModal 
           isOpen={isModalOpen} 
           onClose={() => setIsModalOpen(false)} 
@@ -764,38 +764,38 @@ const App = () => {
         <div className="p-8">
           <img src="https://herphub.au/wp-content/uploads/2026/02/cropped-HERP-Hub-AU-Transparent-Background-scaled-1.png" alt="HERP HUB AU" className="w-48 mb-6 mx-auto" />
           <div className="h-px bg-[#45413E] w-full mb-6" />
-          <p className="text-[10px] font-black text-[#A84323] tracking-[0.3em] uppercase mb-8 text-center">Marketing & Brand Audit</p>
+          <p className="text-[10px] font-black text-[#A84323] tracking-[0.3em] uppercase mb-8 text-center" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>Marketing & Brand Audit</p>
         </div>
 
         <nav className="flex-1 px-4 space-y-1">
           {['Overview', 'Campaigns', 'Creatives', 'Audiences', 'Budget', 'Insights'].map((id) => (
-            <button key={id} onClick={() => setActiveTab(id)} className={`w-full text-left px-6 py-4 uppercase text-[10px] font-black tracking-widest transition-all ${activeTab === id ? 'bg-[#A84323] text-white shadow-xl' : 'text-[#D2B48C] hover:bg-white/5'}`}>
+            <button key={id} onClick={() => setActiveTab(id)} className={`w-full text-left px-6 py-4 uppercase text-[10px] font-black tracking-widest transition-all ${activeTab === id ? 'bg-[#A84323] text-white shadow-xl' : 'text-[#D2B48C] hover:bg-white/5'}`} style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
               {id}
             </button>
           ))}
         </nav>
 
         <div className="p-6 border-t border-[#45413E]">
-          <div className="p-4 bg-[#5E2C25] rounded border border-[#D8D3CC]/10 shadow-lg">
+            <div className="p-4 bg-[#5E2C25] rounded border border-[#D8D3CC]/10 shadow-lg">
             <div className="flex items-center gap-2 mb-1">
               <div className={`w-1.5 h-1.5 rounded-full ${metaDataStatus.connected ? 'bg-emerald-400' : 'bg-rose-500'} animate-pulse`} />
-              <p className="text-[9px] uppercase font-black opacity-60 text-white">System Status</p>
+              <p className="text-[9px] uppercase font-black opacity-60 text-white" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>System Status</p>
             </div>
-            <p className="text-[10px] text-white font-bold truncate">{metaDataStatus.status}</p>
+            <p className="text-[10px] text-white font-bold truncate" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>{metaDataStatus.status}</p>
           </div>
         </div>
       </aside>
 
       <main className="flex-1 flex flex-col overflow-hidden">
         <header className="h-24 border-b border-[#45413E] flex items-center justify-between px-12 bg-[#1A1817]/80 backdrop-blur-xl z-40">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#D2B48C]">{activeTab}</h2>
+          <h2 className="text-[10px] font-black uppercase tracking-[0.5em] text-[#D2B48C]" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>{activeTab}</h2>
           <div className="flex items-center gap-4">
-            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="bg-[#33302E] border border-[#45413E] text-[#D2B48C] text-[10px] font-black uppercase px-4 py-3 tracking-widest focus:outline-none focus:border-[#A84323] cursor-pointer">
+            <select value={dateRange} onChange={(e) => setDateRange(e.target.value)} className="bg-[#33302E] border border-[#45413E] text-[#D2B48C] text-[10px] font-black uppercase px-4 py-3 tracking-widest focus:outline-none focus:border-[#A84323] cursor-pointer" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
               <option value="last_30d">Last 30 Days</option>
               <option value="last_90d">Last Quarter</option>
               <option value="maximum">Lifetime</option>
             </select>
-            <button onClick={handleExecuteAudit} className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all">
+            <button onClick={handleExecuteAudit} className="bg-[#A84323] text-white text-[10px] font-black uppercase px-8 py-3.5 tracking-widest shadow-lg hover:brightness-110 active:scale-95 transition-all" style={{ fontFamily: 'Montserrat, sans-serif', fontWeight: 'bold' }}>
               Execute Brand Audit
             </button>
           </div>
@@ -807,8 +807,7 @@ const App = () => {
       </main>
 
       <style dangerouslySetInnerHTML={{ __html: `
-        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&display=swap');
-        .font-sans { font-family: 'Montserrat', sans-serif; }
+        @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700;900&family=Lora:wght@400;500;600&display=swap');
         .custom-scroll::-webkit-scrollbar { width: 4px; }
         .custom-scroll::-webkit-scrollbar-track { background: #1A1817; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #45413E; }

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - HERP HUB AU</title>
+</head>
+<body>
+    <div id="privacy-policy-container">
+        <h1>Privacy Policy</h1>
+        
+        <h2>Data Collection</h2>
+        <p>HERP HUB AU collects advertising performance data from Meta Business Manager for the purpose of marketing analytics and reporting. This data is used solely for dashboard analytics and is not shared with third parties.</p>
+        
+        <h2>Data Usage</h2>
+        <p>Your advertising data is stored securely and used only for the purpose of providing insights into your marketing performance. We do not sell, rent, or share your data with any third parties.</p>
+        
+        <h2>Data Security</h2>
+        <p>We implement appropriate security measures to protect your data and ensure compliance with relevant data protection regulations.</p>
+        
+        <h2>Contact</h2>
+        <p>If you have questions about this privacy policy, please contact us at <a href="mailto:privacy@herphub.au">privacy@herphub.au</a></p>
+    </div>
+    
+    <script>
+        // Add CSS only to this specific container
+        (function() {
+            const container = document.getElementById('privacy-policy-container');
+            if (container) {
+                container.style.cssText = `
+                    font-family: 'Lora', serif;
+                    background-color: #1A1817;
+                    color: #D8D3CC;
+                    line-height: 1.6;
+                    max-width: 800px;
+                    margin: 40px auto;
+                    padding: 40px 20px;
+                    border-radius: 8px;
+                `;
+                
+                // Style headers
+                const headers = container.querySelectorAll('h1, h2');
+                headers.forEach(header => {
+                    header.style.cssText = `
+                        font-family: 'Montserrat', sans-serif;
+                        font-weight: 900;
+                        color: #D2B48C;
+                        text-transform: uppercase;
+                        letter-spacing: 0.1em;
+                        margin-bottom: 20px;
+                    `;
+                });
+                
+                // Style h1 specifically
+                const h1 = container.querySelector('h1');
+                if (h1) {
+                    h1.style.cssText += `
+                        font-size: 2.5rem;
+                        text-align: center;
+                        margin-bottom: 40px;
+                    `;
+                }
+                
+                // Style h2 specifically
+                const h2s = container.querySelectorAll('h2');
+                h2s.forEach(h2 => {
+                    h2.style.cssText += `
+                        font-size: 1.5rem;
+                        margin-top: 40px;
+                        border-bottom: 2px solid #D2B48C;
+                        padding-bottom: 10px;
+                    `;
+                });
+                
+                // Style paragraphs
+                const paragraphs = container.querySelectorAll('p');
+                paragraphs.forEach(p => {
+                    p.style.cssText = `
+                        margin-bottom: 20px;
+                        font-size: 1.1rem;
+                    `;
+                });
+                
+                // Style links
+                const links = container.querySelectorAll('a');
+                links.forEach(link => {
+                    link.style.cssText = `
+                        color: #D2B48C;
+                        text-decoration: none;
+                        font-weight: 500;
+                    `;
+                    link.addEventListener('hover', function() {
+                        this.style.textDecoration = 'underline';
+                    });
+                });
+            }
+        })();
+    </script>
+</body>
+</html>

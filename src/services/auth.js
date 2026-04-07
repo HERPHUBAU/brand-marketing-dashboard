@@ -136,7 +136,7 @@ class AuthService {
     console.log('DEBUG: Environment variables:', import.meta.env);
     console.log('DEBUG: Client ID:', clientId);
     
-    const redirectUri = encodeURIComponent('https://audit.herphub.au');
+    const redirectUri = encodeURIComponent('https://6450b8262bea0439.vercel.app');
     const scope = 'pages_read_engagement,pages_show_list,ads_read,business_management,pages_read_user_content';
     
     const authUrl = `https://www.facebook.com/v18.0/dialog/oauth?` +

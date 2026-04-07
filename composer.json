@@ -1,0 +1,11 @@
+{
+  "name": "herphub/audit-dashboard",
+  "description": "HERP HUB AU Audit Dashboard",
+  "type": "project",
+  "require": {},
+  "autoload": {
+    "psr-4": {
+      "Herphub\\": "src/"
+    }
+  }
+}
