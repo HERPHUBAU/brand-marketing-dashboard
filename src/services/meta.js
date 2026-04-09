@@ -420,9 +420,25 @@ class MetaService {
 
       let allAccounts = [];
 
+      // First, let's check what permissions we have
+      try {
+        const permissionsResponse = await fetch(`https://graph.facebook.com/v18.0/me/permissions`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (permissionsResponse.ok) {
+          const permissionsData = await permissionsResponse.json();
+          console.log('DEBUG: User permissions:', permissionsData);
+        }
+      } catch (permError) {
+        console.log('DEBUG: Permissions check failed:', permError);
+      }
+
       // Method 1: Try Facebook pages endpoint
       try {
-        const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username&limit=50`, {
+        const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username,access_token&limit=50`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -473,7 +489,7 @@ class MetaService {
 
       // Method 2: Try dedicated Instagram accounts endpoint
       try {
-        const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach,username&limit=50`, {
+        const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach,username,account_type&limit=50`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -556,6 +572,59 @@ class MetaService {
         }
       } catch (pagesError) {
         console.log('DEBUG: Pages endpoint failed:', pagesError);
+      }
+
+      // Method 4: Try getting user's business accounts
+      try {
+        const businessResponse = await fetch(`https://graph.facebook.com/v18.0/me/businesses?fields=name,id&limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('DEBUG: Business API response status:', businessResponse.status);
+
+        if (businessResponse.ok) {
+          const businessData = await businessResponse.json();
+          console.log('DEBUG: Business response:', businessData);
+          
+          // For each business, try to get Instagram accounts
+          for (const business of businessData.data || []) {
+            try {
+              const businessIgResponse = await fetch(`https://graph.facebook.com/v18.0/${business.id}/instagram_accounts?fields=name,followers_count,engagement,impressions,reach,username&limit=50`, {
+                headers: {
+                  'Authorization': `Bearer ${token}`
+                }
+              });
+
+              if (businessIgResponse.ok) {
+                const businessIgData = await businessIgResponse.json();
+                console.log(`DEBUG: Business ${business.name} Instagram accounts:`, businessIgData);
+                
+                const businessIgAccounts = (businessIgData.data || []).map(page => ({
+                  platform: 'instagram',
+                  id: `ig_business_${page.id}`,
+                  name: page.name || page.username || 'Instagram Account',
+                  followers_count: page.followers_count || 0,
+                  engagement: page.engagement || 0,
+                  talking_about_count: 0,
+                  impressions: page.impressions || 0,
+                  reach: page.reach || 0
+                }));
+
+                const existingIds = new Set(allAccounts.map(acc => acc.id));
+                const newBusinessIgAccounts = businessIgAccounts.filter(acc => !existingIds.has(acc.id));
+                allAccounts.push(...newBusinessIgAccounts);
+                
+                console.log('DEBUG: Added business Instagram accounts:', newBusinessIgAccounts);
+              }
+            } catch (businessIgError) {
+              console.log(`DEBUG: Business ${business.name} Instagram failed:`, businessIgError);
+            }
+          }
+        }
+      } catch (businessError) {
+        console.log('DEBUG: Business endpoint failed:', businessError);
       }
 
       console.log('DEBUG: Final all accounts:', allAccounts);
