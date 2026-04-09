@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
 import authService from './services/auth';
-import metaService from './services/meta';
+import { metaService } from './services/meta';
 import { benchmarkService } from './services/benchmark';
 import { brandAuditService } from './services/brandAudit';
 import metricsService from './services/metricsService';
