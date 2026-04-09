@@ -418,56 +418,60 @@ class MetaService {
 
       console.log('DEBUG: Fetching audience data with token:', token ? 'Token exists' : 'No token');
 
-      // Get Facebook pages (this might also include Instagram accounts)
-      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username&limit=50`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
+      let allAccounts = [];
+
+      // Method 1: Try Facebook pages endpoint
+      try {
+        const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username&limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('DEBUG: Facebook API response status:', fbResponse.status);
+
+        if (fbResponse.ok) {
+          const fbData = await fbResponse.json();
+          console.log('DEBUG: Facebook Pages response:', fbData);
+          
+          // Process all accounts from /me/accounts
+          const fbAccounts = (fbData.data || []).map(page => {
+            console.log('DEBUG: Processing account from /me/accounts:', page);
+            
+            // Very flexible Instagram detection
+            const isInstagram = 
+              page.category?.toLowerCase().includes('instagram') || 
+              page.name?.toLowerCase().includes('instagram') ||
+              page.username?.toLowerCase().includes('instagram') ||
+              page.id?.toString().startsWith('instagram_') ||
+              (page.followers_count && !page.talking_about_count) ||
+              (page.followers_count && page.category?.toLowerCase().includes('business')) ||
+              (page.followers_count && page.name?.toLowerCase().includes('herphub')) && !page.talking_about_count;
+            
+            const platform = isInstagram ? 'instagram' : 'facebook';
+            
+            console.log('DEBUG: Account detected as:', platform, 'for page:', page.name);
+            
+            return {
+              platform: platform,
+              id: `${platform}_${page.id}`,
+              name: page.name || page.username || `${platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}`,
+              followers_count: page.followers_count || 0,
+              engagement: page.engagement || 0,
+              talking_about_count: page.talking_about_count || 0,
+              impressions: page.impressions || 0,
+              reach: page.reach || 0
+            };
+          });
+
+          allAccounts.push(...fbAccounts);
+          console.log('DEBUG: Processed accounts from /me/accounts:', fbAccounts);
         }
-      });
-
-      console.log('DEBUG: Facebook API response status:', fbResponse.status);
-
-      if (!fbResponse.ok) {
-        throw new Error(`Facebook API failed: ${fbResponse.status}`);
+      } catch (fbError) {
+        console.log('DEBUG: Facebook endpoint failed:', fbError);
       }
-      
-      const fbData = await fbResponse.json();
-      console.log('DEBUG: Facebook Pages response:', fbData);
-      
-      // Process all accounts from /me/accounts (includes both Facebook and Instagram)
-      const allAccounts = (fbData.data || []).map(page => {
-        console.log('DEBUG: Processing account:', page);
-        
-        // Very flexible Instagram detection - check multiple indicators
-        const isInstagram = 
-          page.category?.toLowerCase().includes('instagram') || 
-          page.name?.toLowerCase().includes('instagram') ||
-          page.username?.toLowerCase().includes('instagram') ||
-          page.id?.toString().startsWith('instagram_') ||
-          // Check if this looks like an Instagram account by data patterns
-          (page.followers_count && !page.talking_about_count) || // Instagram has followers but not talking_about_count
-          (page.followers_count && page.category?.toLowerCase().includes('business')) || // Business accounts might be Instagram
-          (page.followers_count && page.name?.toLowerCase().includes('herphub')) && !page.talking_about_count; // Your brand without talking_about_count
-        
-        const platform = isInstagram ? 'instagram' : 'facebook';
-        
-        console.log('DEBUG: Account detected as:', platform, 'for page:', page.name);
-        
-        return {
-          platform: platform,
-          id: `${platform}_${page.id}`,
-          name: page.name || page.username || `${platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}`,
-          followers_count: page.followers_count || 0,
-          engagement: page.engagement || 0,
-          talking_about_count: page.talking_about_count || 0,
-          impressions: page.impressions || 0,
-          reach: page.reach || 0
-        };
-      });
 
-      console.log('DEBUG: Processed accounts from /me/accounts:', allAccounts);
-
-      // Try to get additional Instagram accounts using the dedicated endpoint
+      // Method 2: Try dedicated Instagram accounts endpoint
       try {
         const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach,username&limit=50`, {
           headers: {
@@ -500,11 +504,61 @@ class MetaService {
           const newIgAccounts = igAccounts.filter(acc => !existingIds.has(acc.id));
           allAccounts.push(...newIgAccounts);
           
-          console.log('DEBUG: Final merged accounts:', allAccounts);
+          console.log('DEBUG: Added Instagram accounts from dedicated endpoint:', newIgAccounts);
         }
       } catch (igError) {
         console.log('DEBUG: Instagram dedicated endpoint failed:', igError);
       }
+
+      // Method 3: Try getting pages with different fields
+      try {
+        const pagesResponse = await fetch(`https://graph.facebook.com/v18.0/me/pages?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username&limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('DEBUG: Pages API response status:', pagesResponse.status);
+
+        if (pagesResponse.ok) {
+          const pagesData = await pagesResponse.json();
+          console.log('DEBUG: Pages response:', pagesData);
+          
+          const pagesAccounts = (pagesData.data || []).map(page => {
+            console.log('DEBUG: Processing account from /me/pages:', page);
+            
+            const isInstagram = 
+              page.category?.toLowerCase().includes('instagram') || 
+              page.name?.toLowerCase().includes('instagram') ||
+              page.username?.toLowerCase().includes('instagram') ||
+              (page.followers_count && !page.talking_about_count);
+            
+            const platform = isInstagram ? 'instagram' : 'facebook';
+            
+            return {
+              platform: platform,
+              id: `${platform}_pages_${page.id}`,
+              name: page.name || page.username || `${platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}`,
+              followers_count: page.followers_count || 0,
+              engagement: page.engagement || 0,
+              talking_about_count: page.talking_about_count || 0,
+              impressions: page.impressions || 0,
+              reach: page.reach || 0
+            };
+          });
+
+          // Merge with existing accounts, avoiding duplicates
+          const existingIds = new Set(allAccounts.map(acc => acc.id));
+          const newPagesAccounts = pagesAccounts.filter(acc => !existingIds.has(acc.id));
+          allAccounts.push(...newPagesAccounts);
+          
+          console.log('DEBUG: Added accounts from /me/pages:', newPagesAccounts);
+        }
+      } catch (pagesError) {
+        console.log('DEBUG: Pages endpoint failed:', pagesError);
+      }
+
+      console.log('DEBUG: Final all accounts:', allAccounts);
 
       // If no real data, provide fallback
       if (allAccounts.length === 0) {
