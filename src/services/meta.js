@@ -416,6 +416,8 @@ class MetaService {
         throw new Error('No Meta access token found');
       }
 
+      console.log('DEBUG: Fetching audience data with token:', token ? 'Token exists' : 'No token');
+
       // Get Facebook pages
       const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
         headers: {
@@ -423,50 +425,71 @@ class MetaService {
         }
       });
 
-      // Get Instagram accounts  
-      const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      console.log('DEBUG: Facebook API response status:', fbResponse.status);
 
-      if (!fbResponse.ok || !igResponse.ok) throw new Error('Failed to fetch pages');
+      if (!fbResponse.ok) {
+        throw new Error(`Facebook API failed: ${fbResponse.status}`);
+      }
       
       const fbData = await fbResponse.json();
-      const igData = await igResponse.json();
-      
       console.log('DEBUG: Facebook Pages response:', fbData);
-      console.log('DEBUG: Instagram Accounts response:', igData);
       
       // Process Facebook pages
-      const fbPages = (fbData.data || []).map(page => ({
-        platform: 'facebook',
-        id: `fb_${page.id}`,
-        name: page.name || 'Facebook Page',
-        followers_count: page.followers_count || 0,
-        engagement: page.engagement || 0,
-        talking_about_count: page.talking_about_count || 0,
-        impressions: page.impressions || 0,
-        reach: page.reach || 0
-      }));
+      const fbPages = (fbData.data || []).map(page => {
+        console.log('DEBUG: Processing Facebook page:', page);
+        return {
+          platform: 'facebook',
+          id: `fb_${page.id}`,
+          name: page.name || 'Facebook Page',
+          followers_count: page.followers_count || 0,
+          engagement: page.engagement || 0,
+          talking_about_count: page.talking_about_count || 0,
+          impressions: page.impressions || 0,
+          reach: page.reach || 0
+        };
+      });
 
-      // Process Instagram accounts (filter for Instagram-specific pages or use different endpoint)
-      const igAccounts = (igData.data || []).map(page => ({
-        platform: 'instagram',
-        id: `ig_${page.id}`,
-        name: page.name || 'Instagram Account',
-        followers_count: page.followers_count || 0,
-        engagement: page.engagement || 0,
-        talking_about_count: page.talking_about_count || 0,
-        impressions: page.impressions || 0,
-        reach: page.reach || 0
-      }));
+      // Try to get Instagram accounts using a different approach
+      let igAccounts = [];
+      try {
+        // First try to get Instagram business accounts
+        const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach&limit=50`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        console.log('DEBUG: Instagram API response status:', igResponse.status);
+
+        if (igResponse.ok) {
+          const igData = await igResponse.json();
+          console.log('DEBUG: Instagram Accounts response:', igData);
+          
+          igAccounts = (igData.data || []).map(page => {
+            console.log('DEBUG: Processing Instagram account:', page);
+            return {
+              platform: 'instagram',
+              id: `ig_${page.id}`,
+              name: page.name || 'Instagram Account',
+              followers_count: page.followers_count || 0,
+              engagement: page.engagement || 0,
+              talking_about_count: 0,
+              impressions: page.impressions || 0,
+              reach: page.reach || 0
+            };
+          });
+        }
+      } catch (igError) {
+        console.log('DEBUG: Instagram fetch failed:', igError);
+      }
 
       // Combine all social media accounts
       const allAccounts = [...fbPages, ...igAccounts];
+      console.log('DEBUG: Combined accounts:', allAccounts);
 
       // If no real data, provide fallback
       if (allAccounts.length === 0) {
+        console.log('DEBUG: No real data found, using fallback');
         return [
           {
             id: 'fb_1',
