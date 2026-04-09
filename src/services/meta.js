@@ -419,7 +419,7 @@ class MetaService {
       console.log('DEBUG: Fetching audience data with token:', token ? 'Token exists' : 'No token');
 
       // Get Facebook pages (this might also include Instagram accounts)
-      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category&limit=50`, {
+      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category,username&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -438,15 +438,25 @@ class MetaService {
       const allAccounts = (fbData.data || []).map(page => {
         console.log('DEBUG: Processing account:', page);
         
-        // Determine platform based on category or name
-        const isInstagram = page.category?.toLowerCase().includes('instagram') || 
-                          page.name?.toLowerCase().includes('instagram') ||
-                          page.id?.toString().startsWith('instagram_');
+        // Very flexible Instagram detection - check multiple indicators
+        const isInstagram = 
+          page.category?.toLowerCase().includes('instagram') || 
+          page.name?.toLowerCase().includes('instagram') ||
+          page.username?.toLowerCase().includes('instagram') ||
+          page.id?.toString().startsWith('instagram_') ||
+          // Check if this looks like an Instagram account by data patterns
+          (page.followers_count && !page.talking_about_count) || // Instagram has followers but not talking_about_count
+          (page.followers_count && page.category?.toLowerCase().includes('business')) || // Business accounts might be Instagram
+          (page.followers_count && page.name?.toLowerCase().includes('herphub')) && !page.talking_about_count; // Your brand without talking_about_count
+        
+        const platform = isInstagram ? 'instagram' : 'facebook';
+        
+        console.log('DEBUG: Account detected as:', platform, 'for page:', page.name);
         
         return {
-          platform: isInstagram ? 'instagram' : 'facebook',
-          id: `${isInstagram ? 'ig' : 'fb'}_${page.id}`,
-          name: page.name || (isInstagram ? 'Instagram Account' : 'Facebook Page'),
+          platform: platform,
+          id: `${platform}_${page.id}`,
+          name: page.name || page.username || `${platform === 'instagram' ? 'Instagram Account' : 'Facebook Page'}`,
           followers_count: page.followers_count || 0,
           engagement: page.engagement || 0,
           talking_about_count: page.talking_about_count || 0,
@@ -459,7 +469,7 @@ class MetaService {
 
       // Try to get additional Instagram accounts using the dedicated endpoint
       try {
-        const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach&limit=50`, {
+        const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach,username&limit=50`, {
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -476,7 +486,7 @@ class MetaService {
             return {
               platform: 'instagram',
               id: `ig_${page.id}`,
-              name: page.name || 'Instagram Account',
+              name: page.name || page.username || 'Instagram Account',
               followers_count: page.followers_count || 0,
               engagement: page.engagement || 0,
               talking_about_count: 0,
