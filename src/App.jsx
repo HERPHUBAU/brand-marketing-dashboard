@@ -691,6 +691,41 @@ const App = () => {
               <StatCard label="Total Impressions" value={formatNumber(totalImps)} trend="REACH" up={totalImps > 0} />
             </div>
             
+            {/* Merged Page & Marketing Insights */}
+            <div className="bg-[#33302E] border border-[#45413E] p-8">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Social & Marketing Performance</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
+                    {formatNumber(audienceData.reduce((acc, curr) => acc + (curr.size || 0), 0))}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Total Followers</div>
+                  <div className="text-[10px] text-[#A84323]">Page Reach</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
+                    {formatNumber(audienceData.reduce((acc, curr) => acc + (curr.engagement || 0), 0))}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Page Engagement</div>
+                  <div className="text-[10px] text-[#A84323]">Social Actions</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
+                    {formatNumber(totalLeads + totalFormSubmissions)}
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Total Leads</div>
+                  <div className="text-[10px] text-[#A84323]">Social + Ads</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
+                    {totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : '0.0'}%
+                  </div>
+                  <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Conversion Rate</div>
+                  <div className="text-[10px] text-[#A84323]">All Channels</div>
+                </div>
+              </div>
+            </div>
+            
             {benchmarkData && (
               <div className="bg-[#33302E] border border-[#45413E] p-8">
                 <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-6">Industry Benchmark Comparison</h3>

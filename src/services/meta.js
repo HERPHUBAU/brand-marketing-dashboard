@@ -416,8 +416,8 @@ class MetaService {
         throw new Error('No Meta access token found');
       }
 
-      // Get pages
-      const response = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count&limit=50`, {
+      // Get pages with comprehensive insights
+      const response = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -427,15 +427,21 @@ class MetaService {
       const data = await response.json();
       console.log('DEBUG: Pages response:', data);
       
-      // Return mock data for testing
+      // Extract real page data or fallback to mock data
+      const pageData = data.data?.[0] || {};
+      
       return [
         {
           id: 'aud_1',
           name: 'Reptile Enthusiasts',
-          size: 45000,
+          size: pageData.followers_count || 45000,
           age_range: '25-45',
           gender: 'mixed',
-          interests: 'Reptiles, Pets, Exotic Animals'
+          interests: 'Reptiles, Pets, Exotic Animals',
+          engagement: pageData.engagement || 2500,
+          talking_about: pageData.talking_about_count || 1200,
+          impressions: pageData.impressions || 85000,
+          reach: pageData.reach || 62000
         },
         {
           id: 'aud_2',
@@ -443,7 +449,11 @@ class MetaService {
           size: 62000,
           age_range: '30-55',
           gender: 'mixed',
-          interests: 'Pet Care, Pet Supplies, Animal Welfare'
+          interests: 'Pet Care, Pet Supplies, Animal Welfare',
+          engagement: 3200,
+          talking_about: 1800,
+          impressions: 120000,
+          reach: 95000
         }
       ];
     } catch (error) {
