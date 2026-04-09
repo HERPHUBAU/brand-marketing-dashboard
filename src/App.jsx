@@ -1,23 +1,29 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import {
-  LayoutDashboard, Megaphone, BarChart3, Users, Calendar, Search,
-  Layers, ImageIcon, Wallet, ShieldCheck, TrendingUp, CheckCircle2, X,
-  Target, Zap, Compass, Lightbulb, Download, AlertCircle, Award, Eye,
-  MousePointer, DollarSign, Activity, TrendingDown, UserCheck,
-  FileText, Settings, Lock, Unlock, RefreshCw
+import { 
+  Megaphone, 
+  Users, 
+  Target, 
+  TrendingUp, 
+  DollarSign, 
+  MousePointer, 
+  Eye, 
+  BarChart3, 
+  PieChart, 
+  ShieldCheck,
+  Download,
+  X,
+  RefreshCw,
+  Lock,
+  AlertCircle,
+  Settings
 } from 'lucide-react';
-import {
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  AreaChart, Area, BarChart, Bar, Radar, RadarChart, PolarGrid,
-  PolarAngleAxis, PolarRadiusAxis, PieChart, Pie, Cell, LineChart, Line,
-  ComposedChart, Legend
-} from 'recharts';
-
-// Import services
-import { authService } from './services/auth.js';
-import { metaService } from './services/meta.js';
-import { benchmarkService } from './services/benchmark.js';
-import { brandAuditService } from './services/brandAudit.js';
+import { ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip } from 'recharts';
+import authService from './services/auth';
+import metaService from './services/meta';
+import benchmarkService from './services/benchmark';
+import brandAuditService from './services/brandAudit';
+import metricsService from './services/metricsService';
+import MetricsCustomizer from './components/MetricsCustomizer';
 
 // --- HELPERS: BIG TECH MINIMALISM ---
 const formatCurrency = (val) => new Intl.NumberFormat('en-AU', { 
@@ -442,6 +448,59 @@ const App = () => {
   const [audienceData, setAudienceData] = useState([]);
   const [benchmarkData, setBenchmarkData] = useState(null);
   const [brandAuditData, setBrandAuditData] = useState(null);
+  
+  // Metrics customization state
+  const [selectedMetrics, setSelectedMetrics] = useState([]);
+  const [isMetricsCustomizerOpen, setIsMetricsCustomizerOpen] = useState(false);
+
+  // --- METRICS CUSTOMIZATION ---
+  useEffect(() => {
+    if (isAuthenticated && userData) {
+      const userId = userData.id || 'default';
+      const userMetrics = metricsService.getUserMetrics(userId);
+      setSelectedMetrics(userMetrics);
+    }
+  }, [isAuthenticated, userData]);
+
+  const handleMetricsChange = (newMetrics) => {
+    setSelectedMetrics(newMetrics);
+  };
+
+  const renderCustomMetrics = () => {
+    if (!selectedMetrics || selectedMetrics.length === 0) {
+      return (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <StatCard label="Total Spend" value={formatCurrency(totalSpend)} trend="META API" up={totalSpend > 0} />
+          <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} trend={`${avgRoas}x`} up={parseFloat(avgRoas) > 0} />
+          <StatCard label="Total Leads" value={formatNumber(totalLeads)} trend="LEADS" up={totalLeads > 0} />
+          <StatCard label="Total Conversions" value={formatNumber(totalConversions)} trend="CONV" up={totalConversions > 0} />
+        </div>
+      );
+    }
+
+    const data = { realStats, audienceData, totalSpend, totalRevenue };
+    const metricsToShow = selectedMetrics.slice(0, 8); // Show max 8 metrics
+    
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {metricsToShow.map((metric) => {
+          const value = metricsService.calculateMetricValue(metric.id, data);
+          const formattedValue = metricsService.formatMetricValue(metric, value, formatCurrency, formatNumber);
+          const meetsThreshold = metricsService.checkThreshold(metric, value);
+          
+          return (
+            <StatCard 
+              key={metric.id}
+              label={metric.name} 
+              value={formattedValue} 
+              trend={metric.category.toUpperCase()} 
+              up={meetsThreshold}
+            />
+          );
+        })}
+      </div>
+    );
+  };
 
   // --- AUTHENTICATION CHECK ---
   useEffect(() => {
@@ -638,12 +697,19 @@ const App = () => {
       <div className="space-y-10 animate-in fade-in duration-500">
         {activeTab === 'Overview' && (
           <>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-              <StatCard label="Total Spend" value={formatCurrency(totalSpend)} trend="META API" up={totalSpend > 0} />
-              <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} trend={`${avgRoas}x`} up={parseFloat(avgRoas) > 0} />
-              <StatCard label="Total Leads" value={formatNumber(totalLeads)} trend="LEADS" up={totalLeads > 0} />
-              <StatCard label="Total Conversions" value={formatNumber(totalConversions)} trend="CONV" up={totalConversions > 0} />
+            {/* Metrics Settings Button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => setIsMetricsCustomizerOpen(true)}
+                className="flex items-center gap-2 bg-[#45413E] text-[#D8D3CC] px-4 py-2 text-[10px] font-black uppercase tracking-widest hover:bg-[#5A524F] transition-all"
+              >
+                <Settings size={14} />
+                Customize Metrics
+              </button>
             </div>
+            
+            {/* Customizable Metrics */}
+            {renderCustomMetrics()}
             
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
@@ -867,6 +933,14 @@ const App = () => {
         .custom-scroll::-webkit-scrollbar-track { background: #1A1817; }
         .custom-scroll::-webkit-scrollbar-thumb { background: #45413E; }
       `}} />
+      
+      {/* Metrics Customizer */}
+      <MetricsCustomizer
+        userId={userData?.id || 'default'}
+        isOpen={isMetricsCustomizerOpen}
+        onClose={() => setIsMetricsCustomizerOpen(false)}
+        onMetricsChange={handleMetricsChange}
+      />
     </div>
     </AuthGuard>
   );
