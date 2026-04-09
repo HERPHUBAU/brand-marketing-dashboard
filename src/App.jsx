@@ -8,7 +8,6 @@ import {
   MousePointer, 
   Eye, 
   BarChart3, 
-  PieChart, 
   ShieldCheck,
   Download,
   X,
@@ -17,7 +16,7 @@ import {
   AlertCircle,
   Settings
 } from 'lucide-react';
-import { ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, PieChart, Pie, Cell } from 'recharts';
+import { ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar, CartesianGrid, XAxis, YAxis, Tooltip, Pie, Cell } from 'recharts';
 import { authService } from './services/auth';
 import { metaService } from './services/meta';
 import { benchmarkService } from './services/benchmark';
