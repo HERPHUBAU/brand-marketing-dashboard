@@ -478,7 +478,11 @@ const App = () => {
       );
     }
 
-    const data = { realStats, audienceData, totalSpend, totalRevenue };
+    // Calculate totals from realStats for metrics service
+    const calculatedTotalSpend = realStats.reduce((acc, curr) => acc + curr.spend, 0);
+    const calculatedTotalRevenue = realStats.reduce((acc, curr) => acc + curr.revenue, 0);
+
+    const data = { realStats, audienceData, totalSpend: calculatedTotalSpend, totalRevenue: calculatedTotalRevenue };
     const metricsToShow = selectedMetrics.slice(0, 8); // Show max 8 metrics
     
     return (
@@ -486,7 +490,7 @@ const App = () => {
         {metricsToShow.map((metric) => {
           const value = metricsService.calculateMetricValue(metric.id, data);
           const formattedValue = metricsService.formatMetricValue(metric, value, formatCurrency, formatNumber);
-          const meetsThreshold = metricsService.checkThreshold(metric, value);
+          const meetsThresholdValue = metricsService.checkThreshold(metric, value);
           
           return (
             <StatCard 
@@ -494,7 +498,7 @@ const App = () => {
               label={metric.name} 
               value={formattedValue} 
               trend={metric.category.toUpperCase()} 
-              up={meetsThreshold}
+              up={meetsThresholdValue}
             />
           );
         })}
