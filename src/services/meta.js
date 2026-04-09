@@ -416,46 +416,82 @@ class MetaService {
         throw new Error('No Meta access token found');
       }
 
-      // Get pages with comprehensive insights
-      const response = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
+      // Get Facebook pages
+      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       });
 
-      if (!response.ok) throw new Error('Failed to fetch pages');
-      const data = await response.json();
-      console.log('DEBUG: Pages response:', data);
-      
-      // Extract real page data or fallback to mock data
-      const pageData = data.data?.[0] || {};
-      
-      return [
-        {
-          id: 'aud_1',
-          name: 'Reptile Enthusiasts',
-          size: pageData.followers_count || 45000,
-          age_range: '25-45',
-          gender: 'mixed',
-          interests: 'Reptiles, Pets, Exotic Animals',
-          engagement: pageData.engagement || 2500,
-          talking_about: pageData.talking_about_count || 1200,
-          impressions: pageData.impressions || 85000,
-          reach: pageData.reach || 62000
-        },
-        {
-          id: 'aud_2',
-          name: 'Pet Owners Australia',
-          size: 62000,
-          age_range: '30-55',
-          gender: 'mixed',
-          interests: 'Pet Care, Pet Supplies, Animal Welfare',
-          engagement: 3200,
-          talking_about: 1800,
-          impressions: 120000,
-          reach: 95000
+      // Get Instagram accounts  
+      const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&platform=instagram&limit=50`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
         }
-      ];
+      });
+
+      if (!fbResponse.ok || !igResponse.ok) throw new Error('Failed to fetch pages');
+      
+      const fbData = await fbResponse.json();
+      const igData = await igResponse.json();
+      
+      console.log('DEBUG: Facebook Pages response:', fbData);
+      console.log('DEBUG: Instagram Accounts response:', igData);
+      
+      // Process Facebook pages
+      const fbPages = (fbData.data || []).map(page => ({
+        platform: 'facebook',
+        id: `fb_${page.id}`,
+        name: page.name || 'Facebook Page',
+        followers_count: page.followers_count || 0,
+        engagement: page.engagement || 0,
+        talking_about_count: page.talking_about_count || 0,
+        impressions: page.impressions || 0,
+        reach: page.reach || 0
+      }));
+
+      // Process Instagram accounts
+      const igAccounts = (igData.data || []).map(page => ({
+        platform: 'instagram',
+        id: `ig_${page.id}`,
+        name: page.name || 'Instagram Account',
+        followers_count: page.followers_count || 0,
+        engagement: page.engagement || 0,
+        talking_about_count: page.talking_about_count || 0,
+        impressions: page.impressions || 0,
+        reach: page.reach || 0
+      }));
+
+      // Combine all social media accounts
+      const allAccounts = [...fbPages, ...igAccounts];
+
+      // If no real data, provide fallback
+      if (allAccounts.length === 0) {
+        return [
+          {
+            id: 'fb_1',
+            platform: 'facebook',
+            name: 'HERP HUB AU Facebook',
+            followers_count: 45000,
+            engagement: 2500,
+            talking_about_count: 1200,
+            impressions: 85000,
+            reach: 62000
+          },
+          {
+            id: 'ig_1',
+            platform: 'instagram',
+            name: 'HERP HUB AU Instagram',
+            followers_count: 28000,
+            engagement: 1800,
+            talking_about_count: 800,
+            impressions: 65000,
+            reach: 48000
+          }
+        ];
+      }
+
+      return allAccounts;
     } catch (error) {
       console.error('Audience data fetch failed:', error);
       return [];

@@ -776,10 +776,10 @@ const App = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
-                    {formatNumber(audienceData.reduce((acc, curr) => acc + (curr.size || 0), 0))}
+                    {formatNumber(audienceData.reduce((acc, curr) => acc + (curr.followers_count || 0), 0))}
                   </div>
                   <div className="text-[10px] uppercase tracking-widest text-[#D2B48C] mb-1">Total Followers</div>
-                  <div className="text-[10px] text-[#A84323]">Page Reach</div>
+                  <div className="text-[10px] text-[#A84323]">Facebook + Instagram</div>
                 </div>
                 <div className="text-center">
                   <div className="text-2xl font-bold text-[#D8D3CC] mb-2">
@@ -803,6 +803,43 @@ const App = () => {
                   <div className="text-[10px] text-[#A84323]">All Channels</div>
                 </div>
               </div>
+            </div>
+            
+            {/* Facebook vs Instagram Breakdown Chart */}
+            <div className="h-[400px] bg-[#33302E] p-8 border border-[#45413E]">
+              <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D2B48C] mb-8">Followers Breakdown</h3>
+              <ResponsiveContainer width="100%" height={350}>
+                <PieChart>
+                  <Pie
+                    data={[
+                      { 
+                        name: 'Facebook', 
+                        value: audienceData.filter(acc => acc.platform === 'facebook').reduce((sum, acc) => sum + (acc.followers_count || 0), 0), 
+                        color: '#1877F2' 
+                      },
+                      { 
+                        name: 'Instagram', 
+                        value: audienceData.filter(acc => acc.platform === 'instagram').reduce((sum, acc) => sum + (acc.followers_count || 0), 0), 
+                        color: '#E4405F' 
+                      }
+                    ]}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={60}
+                    outerRadius={120}
+                    paddingAngle={5}
+                    dataKey="value"
+                  >
+                    {[
+                      { name: 'Facebook', value: audienceData.filter(acc => acc.platform === 'facebook').reduce((sum, acc) => sum + (acc.followers_count || 0), 0), color: '#1877F2' },
+                      { name: 'Instagram', value: audienceData.filter(acc => acc.platform === 'instagram').reduce((sum, acc) => sum + (acc.followers_count || 0), 0), color: '#E4405F' }
+                    ].map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{backgroundColor: '#1A1817', border: 'none', color: '#D8D3CC'}} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
             
             {benchmarkData && (
