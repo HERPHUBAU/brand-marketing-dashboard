@@ -468,12 +468,21 @@ const App = () => {
 
   const renderCustomMetrics = () => {
     if (!selectedMetrics || selectedMetrics.length === 0) {
+      // Calculate totals from realStats for fallback display
+      const fallbackTotalSpend = realStats.reduce((acc, curr) => acc + curr.spend, 0);
+      const fallbackTotalRevenue = realStats.reduce((acc, curr) => acc + curr.revenue, 0);
+      const fallbackTotalLeads = realStats.reduce((acc, curr) => acc + (curr.leads || 0), 0);
+      const fallbackTotalConversions = realStats.reduce((acc, curr) => acc + curr.conversions, 0);
+      const fallbackAvgRoas = realStats.length > 0 
+        ? (realStats.reduce((acc, curr) => acc + curr.roas, 0) / realStats.length).toFixed(2) 
+        : "0.00";
+
       return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard label="Total Spend" value={formatCurrency(totalSpend)} trend="META API" up={totalSpend > 0} />
-          <StatCard label="Total Revenue" value={formatCurrency(totalRevenue)} trend={`${avgRoas}x`} up={parseFloat(avgRoas) > 0} />
-          <StatCard label="Total Leads" value={formatNumber(totalLeads)} trend="LEADS" up={totalLeads > 0} />
-          <StatCard label="Total Conversions" value={formatNumber(totalConversions)} trend="CONV" up={totalConversions > 0} />
+          <StatCard label="Total Spend" value={formatCurrency(fallbackTotalSpend)} trend="META API" up={fallbackTotalSpend > 0} />
+          <StatCard label="Total Revenue" value={formatCurrency(fallbackTotalRevenue)} trend={`${fallbackAvgRoas}x`} up={parseFloat(fallbackAvgRoas) > 0} />
+          <StatCard label="Total Leads" value={formatNumber(fallbackTotalLeads)} trend="LEADS" up={fallbackTotalLeads > 0} />
+          <StatCard label="Total Conversions" value={formatNumber(fallbackTotalConversions)} trend="CONV" up={fallbackTotalConversions > 0} />
         </div>
       );
     }
