@@ -424,7 +424,7 @@ class MetaService {
       });
 
       // Get Instagram accounts  
-      const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&platform=instagram&limit=50`, {
+      const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -450,7 +450,7 @@ class MetaService {
         reach: page.reach || 0
       }));
 
-      // Process Instagram accounts
+      // Process Instagram accounts (filter for Instagram-specific pages or use different endpoint)
       const igAccounts = (igData.data || []).map(page => ({
         platform: 'instagram',
         id: `ig_${page.id}`,
