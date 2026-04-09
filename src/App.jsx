@@ -21,7 +21,7 @@ import { ResponsiveContainer, ComposedChart, Line, Area, BarChart, Bar, Cartesia
 import authService from './services/auth';
 import metaService from './services/meta';
 import benchmarkService from './services/benchmark';
-import brandAuditService from './services/brandAudit';
+import { brandAuditService } from './services/brandAudit';
 import metricsService from './services/metricsService';
 import MetricsCustomizer from './components/MetricsCustomizer';
 
