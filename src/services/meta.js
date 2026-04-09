@@ -418,8 +418,8 @@ class MetaService {
 
       console.log('DEBUG: Fetching audience data with token:', token ? 'Token exists' : 'No token');
 
-      // Get Facebook pages
-      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach&limit=50`, {
+      // Get Facebook pages (this might also include Instagram accounts)
+      const fbResponse = await fetch(`https://graph.facebook.com/v18.0/me/accounts?fields=name,followers_count,engagement,talking_about_count,impressions,reach,category&limit=50`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -434,13 +434,19 @@ class MetaService {
       const fbData = await fbResponse.json();
       console.log('DEBUG: Facebook Pages response:', fbData);
       
-      // Process Facebook pages
-      const fbPages = (fbData.data || []).map(page => {
-        console.log('DEBUG: Processing Facebook page:', page);
+      // Process all accounts from /me/accounts (includes both Facebook and Instagram)
+      const allAccounts = (fbData.data || []).map(page => {
+        console.log('DEBUG: Processing account:', page);
+        
+        // Determine platform based on category or name
+        const isInstagram = page.category?.toLowerCase().includes('instagram') || 
+                          page.name?.toLowerCase().includes('instagram') ||
+                          page.id?.toString().startsWith('instagram_');
+        
         return {
-          platform: 'facebook',
-          id: `fb_${page.id}`,
-          name: page.name || 'Facebook Page',
+          platform: isInstagram ? 'instagram' : 'facebook',
+          id: `${isInstagram ? 'ig' : 'fb'}_${page.id}`,
+          name: page.name || (isInstagram ? 'Instagram Account' : 'Facebook Page'),
           followers_count: page.followers_count || 0,
           engagement: page.engagement || 0,
           talking_about_count: page.talking_about_count || 0,
@@ -449,10 +455,10 @@ class MetaService {
         };
       });
 
-      // Try to get Instagram accounts using a different approach
-      let igAccounts = [];
+      console.log('DEBUG: Processed accounts from /me/accounts:', allAccounts);
+
+      // Try to get additional Instagram accounts using the dedicated endpoint
       try {
-        // First try to get Instagram business accounts
         const igResponse = await fetch(`https://graph.facebook.com/v18.0/me/instagram_accounts?fields=name,followers_count,engagement,impressions,reach&limit=50`, {
           headers: {
             'Authorization': `Bearer ${token}`
@@ -465,8 +471,8 @@ class MetaService {
           const igData = await igResponse.json();
           console.log('DEBUG: Instagram Accounts response:', igData);
           
-          igAccounts = (igData.data || []).map(page => {
-            console.log('DEBUG: Processing Instagram account:', page);
+          const igAccounts = (igData.data || []).map(page => {
+            console.log('DEBUG: Processing Instagram account from dedicated endpoint:', page);
             return {
               platform: 'instagram',
               id: `ig_${page.id}`,
@@ -478,14 +484,17 @@ class MetaService {
               reach: page.reach || 0
             };
           });
+
+          // Merge with existing accounts, avoiding duplicates
+          const existingIds = new Set(allAccounts.map(acc => acc.id));
+          const newIgAccounts = igAccounts.filter(acc => !existingIds.has(acc.id));
+          allAccounts.push(...newIgAccounts);
+          
+          console.log('DEBUG: Final merged accounts:', allAccounts);
         }
       } catch (igError) {
-        console.log('DEBUG: Instagram fetch failed:', igError);
+        console.log('DEBUG: Instagram dedicated endpoint failed:', igError);
       }
-
-      // Combine all social media accounts
-      const allAccounts = [...fbPages, ...igAccounts];
-      console.log('DEBUG: Combined accounts:', allAccounts);
 
       // If no real data, provide fallback
       if (allAccounts.length === 0) {
